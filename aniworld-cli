@@ -369,11 +369,15 @@ main_loop() {
         fi
     } </dev/null &
 
+    # Windows-Fix: Warte, bis mpv gestartet ist (verhindert Race Condition)
+    # Mit --debug ist das Timing anders, daher brauchen wir diese Pause
+    sleep 1.5
+
     # Haupt-Loop mit Menü in while-Bedingung (exakt wie ani-cli)
     # Zeige Menü mit aktuellen Infos (dynamisch aktualisiert)
     while true; do
         # Windows-Fix: Kurze Pause damit mpv das Terminal freigibt
-        sleep 0.5
+        sleep 1
 
         # Debug logging
         if [ -n "${DEBUG:-}" ]; then
