@@ -372,6 +372,9 @@ main_loop() {
     # Haupt-Loop mit Menü in while-Bedingung (exakt wie ani-cli)
     # Zeige Menü mit aktuellen Infos (dynamisch aktualisiert)
     while true; do
+        # Windows-Fix: Kurze Pause damit mpv das Terminal freigibt
+        sleep 0.5
+
         # Debug logging
         if [ -n "${DEBUG:-}" ]; then
             echo "DEBUG: Entering menu loop" >&2
