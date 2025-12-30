@@ -111,8 +111,18 @@ select_anime() {
         exit 1
     fi
 
+    # Füge Episodenanzahl zu jedem Ergebnis hinzu
+    show_loading "Lade Episodenanzahl"
+    local results_with_count=""
+    while IFS='|' read -r title slug; do
+        local ep_count
+        ep_count=$(get_total_episode_count "$slug")
+        results_with_count="${results_with_count}${title} (${ep_count})|${slug}\n"
+    done <<< "$results"
+    clear_loading
+
     local selection
-    selection=$(echo "$results" | select_with_fzf "Wähle Anime")
+    selection=$(echo -e "$results_with_count" | select_with_fzf "Wähle Anime")
 
     if [ -z "$selection" ]; then
         show_error "Keine Auswahl getroffen"
