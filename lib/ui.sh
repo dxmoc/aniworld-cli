@@ -27,9 +27,9 @@ select_with_fzf() {
     local input
     input=$(cat)
 
-    # Windows-kompatible Version ohne /dev/tty Umleitung
-    # --no-mouse verhindert problematische Events auf Git Bash/Windows
-    echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse
+    # Windows/Git Bash: fzf braucht expliziten Zugriff auf das Terminal
+    # Verwende Command Substitution mit explizitem stdin vom TTY
+    echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse --bind=ctrl-c:abort < "$(tty)" 2>&1
 }
 
 # Zeige Fehler
