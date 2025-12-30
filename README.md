@@ -57,7 +57,7 @@ brew install curl grep gnu-sed fzf mpv yt-dlp jq
 
 ```bash
 # Repository clonen
-git clone https://github.com/USERNAME/aniworld-cli.git
+git clone https://github.com/dxmoc/aniworld-cli.git
 cd aniworld-cli
 
 # Install-Script ausführen
