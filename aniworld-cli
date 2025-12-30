@@ -169,7 +169,7 @@ select_season_interactive() {
 
     if [ -z "$seasons" ]; then
         show_error "Keine Staffeln gefunden"
-        exit 1
+        return 1
     fi
 
     # Wenn Fortsetzen und Staffel gegeben, verwende diese
@@ -182,8 +182,8 @@ select_season_interactive() {
     selection=$(echo "$seasons" | sed 's/^/Staffel /' | select_with_fzf "Wähle Staffel")
 
     if [ -z "$selection" ]; then
-        show_error "Keine Auswahl getroffen"
-        exit 1
+        # Keine Auswahl getroffen (ESC gedrückt) - zurück zum Menü
+        return 1
     fi
 
     echo "$selection" | grep -oP '[0-9]+'
@@ -200,7 +200,7 @@ select_episode_interactive() {
 
     if [ -z "$episodes" ]; then
         show_error "Keine Episoden gefunden"
-        exit 1
+        return 1
     fi
 
     # Wenn Fortsetzen und Episode gegeben, verwende diese
@@ -213,8 +213,8 @@ select_episode_interactive() {
     selection=$(echo "$episodes" | sed 's/^/Episode /' | select_with_fzf "Wähle Episode")
 
     if [ -z "$selection" ]; then
-        show_error "Keine Auswahl getroffen"
-        exit 1
+        # Keine Auswahl getroffen (ESC gedrückt) - zurück zum Menü
+        return 1
     fi
 
     echo "$selection" | grep -oP '[0-9]+'
@@ -232,7 +232,7 @@ select_and_save_hoster() {
 
     if [ -z "$hosters" ]; then
         show_error "Keine Hoster gefunden"
-        exit 1
+        return 1
     fi
 
     local selected_line=""
@@ -267,8 +267,8 @@ select_and_save_hoster() {
                     select_with_fzf "Wähle Hoster")
 
         if [ -z "$selection" ]; then
-            show_error "Keine Auswahl getroffen"
-            exit 1
+            # Keine Auswahl getroffen (ESC gedrückt) - zurück zum Menü
+            return 1
         fi
 
         local selected_id
@@ -426,8 +426,23 @@ main_loop() {
                 ;;
             select)
                 # Wähle neue Staffel/Episode
-                season=$(select_season_interactive "$slug" "")
-                episode=$(select_episode_interactive "$slug" "$season" "")
+                local new_season
+                new_season=$(select_season_interactive "$slug" "")
+                if [ -z "$new_season" ]; then
+                    # Abgebrochen - zurück zum Menü
+                    continue
+                fi
+
+                local new_episode
+                new_episode=$(select_episode_interactive "$slug" "$new_season" "")
+                if [ -z "$new_episode" ]; then
+                    # Abgebrochen - zurück zum Menü
+                    continue
+                fi
+
+                # Nur übernehmen wenn beides erfolgreich
+                season="$new_season"
+                episode="$new_episode"
                 episodes=$(get_episodes "$slug" "$season")
                 season_episodes=$(echo "$episodes" | wc -l)
                 ;;
