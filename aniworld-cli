@@ -268,9 +268,18 @@ main_loop() {
     local season="$2"
     local episode="$3"
 
+    # Hole Anime-Titel einmal (bleibt konstant)
+    local anime_title
+    anime_title=$(get_anime_title "$slug")
+
     # Hole Episode-Liste einmal
     local episodes
     episodes=$(get_episodes "$slug" "$season")
+    local total_episodes
+    total_episodes=$(echo "$episodes" | wc -l)
+
+    # Aktualisiere CURRENT_TITLE für erste Episode
+    CURRENT_TITLE="${anime_title} - S${season}E${episode}"
 
     # Spiele erste Episode (wie ani-cli: play vor der while-Schleife)
     local video_url
@@ -285,7 +294,10 @@ main_loop() {
     save_history "$slug" "$season" "$episode"
 
     # Haupt-Loop mit Menü in while-Bedingung (exakt wie ani-cli)
-    while cmd=$(printf "next\nreplay\nprevious\nselect\nquit" | select_with_fzf "Playing: ${CURRENT_TITLE} S${season}E${episode}"); do
+    # Zeige Menü mit aktuellen Infos
+    while cmd=$(printf "▶ next      - Nächste Episode\n🔁 replay    - Episode wiederholen\n◀ previous  - Vorherige Episode\n📋 select    - Andere Episode wählen\n❌ quit      - Beenden" | select_with_fzf "${anime_title} | S${season}E${episode}/${total_episodes}"); do
+        # Extrahiere nur den Befehl (erstes Wort nach Emoji)
+        cmd=$(echo "$cmd" | awk '{print $2}')
         case "$cmd" in
             next)
                 # Nächste Episode
@@ -309,6 +321,7 @@ main_loop() {
                     fi
 
                     episodes=$(get_episodes "$slug" "$season")
+                    total_episodes=$(echo "$episodes" | wc -l)
                 fi
                 ;;
             replay)
@@ -322,6 +335,7 @@ main_loop() {
                     if [ "$season" -gt 1 ]; then
                         season=$((season - 1))
                         episodes=$(get_episodes "$slug" "$season")
+                        total_episodes=$(echo "$episodes" | wc -l)
                         episode=$(echo "$episodes" | tail -1)
                     else
                         show_info "Bereits bei der ersten Episode"
@@ -334,11 +348,15 @@ main_loop() {
                 season=$(select_season_interactive "$slug" "")
                 episode=$(select_episode_interactive "$slug" "$season" "")
                 episodes=$(get_episodes "$slug" "$season")
+                total_episodes=$(echo "$episodes" | wc -l)
                 ;;
             quit|"")
                 break
                 ;;
         esac
+
+        # Aktualisiere CURRENT_TITLE vor dem Abspielen
+        CURRENT_TITLE="${anime_title} - S${season}E${episode}"
 
         # Hole und spiele Episode (wie ani-cli: play am Ende der Schleife)
         video_url=$(get_video_for_episode "$slug" "$season" "$episode")
