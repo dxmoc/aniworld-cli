@@ -115,15 +115,36 @@ get_hoster_links() {
                 hoster=$(echo "$line" | sed -n 's/.*<h4>\([^<]*\)<\/h4>.*/\1/p' | head -1)
             fi
 
-            # Extrahiere Sprache (data-lang-key)
-            language=$(echo "$line" | sed -n 's/.*data-lang-key="\([^"]*\)".*/\1/p' | head -1)
+            # Extrahiere Sprache (data-lang-key) und mappe zu lesbaren Namen
+            local lang_key=$(echo "$line" | sed -n 's/.*data-lang-key="\([^"]*\)".*/\1/p' | head -1)
 
-            # Extrahiere Qualität falls vorhanden (z.B. "720p", "1080p")
+            # Mappe language keys zu lesbaren Namen (basierend auf aniworld.to Konvention)
+            case "$lang_key" in
+                1) language="GerDub" ;;
+                2) language="GerSub" ;;
+                3) language="EngSub" ;;
+                *) language="" ;;
+            esac
+
+            # Extrahiere Qualität aus verschiedenen Quellen
+            # 1. Suche nach expliziten Qualitäts-Angaben (720p, 1080p, etc.)
             quality=$(echo "$line" | grep -oE '[0-9]{3,4}p' | head -1)
 
-            # Wenn keine Sprache gefunden, versuche aus anderen Attributen
+            # 2. Wenn nicht gefunden, suche nach Qualitäts-Keywords
+            if [ -z "$quality" ]; then
+                if echo "$line" | grep -qi "1080"; then
+                    quality="1080p"
+                elif echo "$line" | grep -qi "720"; then
+                    quality="720p"
+                elif echo "$line" | grep -qi "480"; then
+                    quality="480p"
+                elif echo "$line" | grep -qi "HD"; then
+                    quality="HD"
+                fi
+            fi
+
+            # Fallback: Suche nach GerDub, GerSub direkt im Text
             if [ -z "$language" ]; then
-                # Suche nach GerDub, GerSub, EngSub, etc. im Text
                 language=$(echo "$line" | grep -oE '(GerDub|GerSub|EngSub|Ger|Eng)' | head -1)
             fi
 
