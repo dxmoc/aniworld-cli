@@ -278,9 +278,10 @@ get_anime_title() {
     local html
     html=$(curl -s -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
 
-    # Titel ist in <h1><span>TITEL</span></h1> Format (Windows-kompatibel)
+    # Titel ist in <h1 itemprop="name"><span>TITEL</span></h1> Format
+    # Wichtig: Nur das erste <span> innerhalb von <h1>, nicht greedy matchen
     echo "$html" | \
-        tr '\n' ' ' | \
+        grep 'itemprop="name"' | \
         sed -n 's/.*<h1[^>]*>.*<span>\([^<]*\)<\/span>.*/\1/p' | \
         head -1
 }
