@@ -269,15 +269,8 @@ main_loop() {
     local episode="$3"
 
     # Hole Anime-Titel einmal (bleibt konstant)
-    local anime_title_raw
-    anime_title_raw=$(get_anime_title "$slug")
-
-    # Hole Gesamt-Episodenanzahl über alle Staffeln
-    local total_episode_count
-    total_episode_count=$(get_total_episode_count "$slug")
-
-    # Anime-Titel mit Episodenanzahl
-    local anime_title="${anime_title_raw} (${total_episode_count})"
+    local anime_title
+    anime_title=$(get_anime_title "$slug")
 
     # Hole Episode-Liste für aktuelle Staffel
     local episodes
@@ -433,11 +426,8 @@ main() {
         season=$(echo "$last_entry" | cut -d'|' -f2)
         episode=$(echo "$last_entry" | cut -d'|' -f3)
 
-        local title_raw
-        title_raw=$(get_anime_title "$slug")
-        local total_episode_count
-        total_episode_count=$(get_total_episode_count "$slug")
-        local title="${title_raw} (${total_episode_count})"
+        local title
+        title=$(get_anime_title "$slug")
 
         show_info "Fortsetzen: ${title} - S${season}E${episode}"
 
@@ -461,12 +451,9 @@ main() {
     local slug
     slug=$(select_anime "$search_term")
 
-    # Hole Titel mit Episodenanzahl
-    local anime_title_raw
-    anime_title_raw=$(get_anime_title "$slug")
-    local total_episode_count
-    total_episode_count=$(get_total_episode_count "$slug")
-    local anime_title="${anime_title_raw} (${total_episode_count})"
+    # Hole Titel
+    local anime_title
+    anime_title=$(get_anime_title "$slug")
     show_info "Gewählt: ${anime_title}"
 
     # Prüfe History und zeige fzf-Menü (wie ani-cli)
