@@ -27,12 +27,9 @@ select_with_fzf() {
     local input
     input=$(cat)
 
-    # Vollbild-Modus wie ani-cli (kein --height)
-    if command -v tty >/dev/null 2>&1 && tty -s 2>/dev/null; then
-        echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi </dev/tty
-    else
-        echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi
-    fi
+    # Windows-kompatible Version ohne /dev/tty Umleitung
+    # --no-mouse verhindert problematische Events auf Git Bash/Windows
+    echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse
 }
 
 # Zeige Fehler
