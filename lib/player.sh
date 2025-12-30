@@ -23,7 +23,8 @@ play_video() {
         return 1
     fi
 
-    # Kein "Starte player..." output - direkt abspielen
+    # Töte alte mpv-Instanzen bevor neue gestartet wird
+    pkill -f "mpv" 2>/dev/null || true
 
     # Windows-kompatibel: Finde den korrekten Befehl
     local player_cmd=""
@@ -60,13 +61,13 @@ play_video() {
                     --script-opts=ytdl_hook-ytdl_path="$ytdl_path" \
                     --ytdl-format=bestvideo+bestaudio/best \
                     --force-media-title="$CURRENT_TITLE" \
-                    >/dev/null 2>&1
+                    >/dev/null 2>&1 &
             else
                 "$player_cmd" "$video_url" \
                     --referrer="https://aniworld.to" \
                     --user-agent="$USER_AGENT" \
                     --force-media-title="$CURRENT_TITLE" \
-                    >/dev/null 2>&1
+                    >/dev/null 2>&1 &
             fi
             ;;
         vlc)
@@ -75,7 +76,7 @@ play_video() {
                 --http-user-agent="$USER_AGENT" \
                 --no-loop \
                 --play-and-exit \
-                >/dev/null 2>&1
+                >/dev/null 2>&1 &
             ;;
     esac
 }

@@ -9,15 +9,16 @@ YELLOW='\033[1;33m'
 CYAN='\033[1;36m'
 RESET='\033[0m'
 
-# Zeige Loading-Nachricht
+# Zeige Loading-Nachricht (silent mode - keine Ausgabe)
 show_loading() {
-    local message="$1"
-    echo -ne "\r\033[K${BLUE}${message}...${RESET}" >&2
+    # Alles läuft im Hintergrund, keine Anzeige
+    true
 }
 
-# Lösche Loading-Nachricht
+# Lösche Loading-Nachricht (silent mode)
 clear_loading() {
-    echo -ne "\r\033[K" >&2
+    # Alles läuft im Hintergrund, keine Anzeige
+    true
 }
 
 # fzf-Wrapper für Auswahl (Vollbild wie ani-cli)
