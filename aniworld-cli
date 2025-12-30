@@ -315,17 +315,15 @@ main_loop() {
     # Aktualisiere CURRENT_TITLE für erste Episode
     CURRENT_TITLE="${anime_title} - S${season}E${episode}"
 
-    # Spiele erste Episode (wie ani-cli: play vor der while-Schleife)
-    local video_url
-    video_url=$(get_video_for_episode "$slug" "$season" "$episode")
-
-    if [ -z "$video_url" ]; then
-        show_error "Konnte Video-URL nicht laden"
-        return 1
-    fi
-
-    play_video "$video_url"
-    save_history "$slug" "$season" "$episode"
+    # Lade und spiele erste Episode im Hintergrund
+    {
+        local video_url
+        video_url=$(get_video_for_episode "$slug" "$season" "$episode")
+        if [ -n "$video_url" ]; then
+            play_video "$video_url"
+            save_history "$slug" "$season" "$episode"
+        fi
+    } &
 
     # Haupt-Loop mit Menü in while-Bedingung (exakt wie ani-cli)
     # Zeige Menü mit aktuellen Infos (dynamisch aktualisiert)
@@ -394,16 +392,15 @@ main_loop() {
         # Aktualisiere CURRENT_TITLE vor dem Abspielen
         CURRENT_TITLE="${anime_title} - S${season}E${episode}"
 
-        # Hole und spiele Episode (wie ani-cli: play am Ende der Schleife)
-        video_url=$(get_video_for_episode "$slug" "$season" "$episode")
-
-        if [ -z "$video_url" ]; then
-            show_error "Konnte Video-URL nicht laden"
-            break
-        fi
-
-        play_video "$video_url"
-        save_history "$slug" "$season" "$episode"
+        # Lade und spiele Episode im Hintergrund (Menu bleibt sichtbar)
+        {
+            local video_url
+            video_url=$(get_video_for_episode "$slug" "$season" "$episode")
+            if [ -n "$video_url" ]; then
+                play_video "$video_url"
+                save_history "$slug" "$season" "$episode"
+            fi
+        } &
     done
 }
 
@@ -490,10 +487,9 @@ main() {
     local slug
     slug=$(select_anime "$search_term")
 
-    # Hole Titel
+    # Hole Titel im Hintergrund
     local anime_title
     anime_title=$(get_anime_title "$slug")
-    show_info "Gewählt: ${anime_title}"
 
     # Prüfe History und zeige fzf-Menü (wie ani-cli)
     local continue_season=""
