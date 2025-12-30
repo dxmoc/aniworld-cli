@@ -134,7 +134,7 @@ Git Bash als Windows Terminal Profil einrichten:
 - Öffne Windows Terminal
 - Klicke auf das Dropdown-Menü (▼) → Einstellungen
 - Profile → Neues Profil hinzufügen → Neues leeres Profil
-- **Befehlszeile:** `%USERPROFILE%\scoop\apps\git\current\bin\bash.exe -i -l`
+- **Befehlszeile:** `C:\Program Files\Git\bin\bash.exe -i -l`
 - **Startverzeichnis:** `%USERPROFILE%`
 - **Name:** Git Bash
 - Speichern und Windows Terminal neu starten
