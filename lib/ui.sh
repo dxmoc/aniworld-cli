@@ -24,16 +24,29 @@ clear_loading() {
 # fzf-Wrapper für Auswahl (Vollbild wie ani-cli)
 select_with_fzf() {
     local prompt="$1"
+
+    # WICHTIG: Lese Input ZUERST, bevor wir FDs manipulieren
     local input
     input=$(cat)
 
-    # Windows/Git Bash Fix: Öffne stdin explizit auf FD 3 vom Terminal
-    # Dann leite fzf stdin von FD 3 um
+    # Debug: Zeige wie viele Zeilen Input wir haben
+    local line_count=$(echo "$input" | wc -l)
+    echo "DEBUG: Input hat $line_count Zeilen" >&2
+    if [ -z "$input" ]; then
+        echo "DEBUG: WARNING - Input ist LEER!" >&2
+    fi
+
+    # Öffne Terminal auf FD 3 für fzf's interaktive Eingabe
     exec 3< /dev/tty
+
+    # Übergebe Daten via echo (stdin), aber Tastatur-Input kommt von FD 3
     echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse <&3
-    local result=$?
-    exec 3<&-  # Schließe FD 3
-    return $result
+    local exit_code=$?
+
+    # Schließe FD 3
+    exec 3<&-
+
+    return $exit_code
 }
 
 # Zeige Fehler
