@@ -16,6 +16,7 @@ Inspiriert von [ani-cli](https://github.com/pystardust/ani-cli), aber speziell f
 - 🎥 **mpv/vlc Integration**: Nahtlose Video-Player-Integration mit yt-dlp Support
 - 🚀 **Binge-Watch-Modus**: Fließend durch Episoden navigieren
 - 🎨 **Clean UI**: Keine Console-Spam, nur fzf-Menüs und minimale Loading-Nachrichten
+- 💻 **Cross-Platform**: Linux, macOS und Windows (via Git Bash)
 
 ## Dependencies
 
@@ -51,9 +52,15 @@ sudo dnf install curl grep sed fzf mpv yt-dlp jq
 brew install curl grep gnu-sed fzf mpv yt-dlp jq
 ```
 
+**Windows:**
+```bash
+# In Git Bash (siehe Windows Installation Sektion)
+scoop install fzf mpv yt-dlp aria2 jq
+```
+
 ## Installation
 
-### Schnelle Installation
+### Linux/macOS - Schnelle Installation
 
 ```bash
 # Repository clonen
@@ -66,10 +73,12 @@ sudo ./install.sh
 ```
 
 Das Install-Script wird:
-- ✓ Automatisch dein Betriebssystem erkennen (Ubuntu, Arch, Fedora, macOS)
+- ✓ Automatisch dein Betriebssystem erkennen (Ubuntu, Arch, Fedora, Alpine, Void, Gentoo, Solus, NixOS, macOS)
 - ✓ Fehlende Dependencies installieren
 - ✓ aniworld-cli system-weit verfügbar machen
 - ✓ Data-Verzeichnis einrichten
+
+**Windows-Nutzer:** Siehe [Windows Installation](#windows-installation) weiter unten.
 
 ### Manuelle Installation
 
@@ -90,6 +99,104 @@ sudo dnf install curl grep sed fzf mpv yt-dlp jq
 2. Symlink erstellen:
 ```bash
 sudo ln -s "$(pwd)/aniworld-cli" /usr/local/bin/aniworld-cli
+```
+
+### Windows Installation
+
+aniworld-cli funktioniert auf Windows über **Git Bash** in Windows Terminal. PowerShell/CMD werden nicht unterstützt.
+
+#### Voraussetzungen
+
+**1. Scoop Package Manager installieren**
+
+Öffne PowerShell und folge der Anleitung auf [scoop.sh](https://scoop.sh/):
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+```
+
+**2. Windows Terminal installieren** (falls nicht vorhanden)
+
+Windows 11: Bereits vorinstalliert
+Windows 10:
+```powershell
+scoop bucket add extras
+scoop install extras/windows-terminal
+```
+
+**3. Git Bash installieren und konfigurieren**
+
+```powershell
+scoop install git
+```
+
+Git Bash als Windows Terminal Profil einrichten:
+- Öffne Windows Terminal
+- Klicke auf das Dropdown-Menü (▼) → Einstellungen
+- Profile → Neues Profil hinzufügen → Neues leeres Profil
+- **Befehlszeile:** `%USERPROFILE%\scoop\apps\git\current\bin\bash.exe -i -l`
+- **Startverzeichnis:** `%USERPROFILE%`
+- **Name:** Git Bash
+- Speichern und Windows Terminal neu starten
+
+#### Installation
+
+Öffne das **Git Bash Profil** in Windows Terminal:
+
+**1. Dependencies installieren:**
+```bash
+scoop bucket add extras
+scoop install fzf mpv yt-dlp aria2 jq
+```
+
+**2. aniworld-cli installieren:**
+```bash
+# Repository clonen
+cd ~
+git clone https://github.com/dxmoc/aniworld-cli.git
+cd aniworld-cli
+
+# Zum PATH hinzufügen (in ~/.bashrc)
+echo "export PATH=\"\$HOME/aniworld-cli:\$PATH\"" >> ~/.bashrc
+source ~/.bashrc
+
+# Executable machen
+chmod +x aniworld-cli
+```
+
+**3. Testen:**
+```bash
+aniworld-cli --version
+```
+
+#### Windows-spezifische Hinweise
+
+- ✅ Verwende **nur Git Bash** (keine PowerShell/CMD)
+- ✅ Windows Terminal wird empfohlen (bessere Unicode-Unterstützung)
+- ✅ mpv öffnet Videos in einem separaten Fenster
+- ⚠️ Falls fzf nicht reagiert: Stelle sicher, dass du Git Bash verwendest (nicht mintty)
+
+#### Troubleshooting
+
+**Problem: "fzf: command not found"**
+```bash
+scoop install fzf
+```
+
+**Problem: "mpv: command not found"**
+```bash
+scoop install mpv
+```
+
+**Problem: Videos starten nicht**
+- Stelle sicher, dass yt-dlp installiert ist: `scoop install yt-dlp`
+- Prüfe mpv Installation: `mpv --version`
+
+**Problem: Encoding-Fehler bei deutschen Umlauten**
+```bash
+# In ~/.bashrc hinzufügen:
+export LANG=de_DE.UTF-8
+export LC_ALL=de_DE.UTF-8
 ```
 
 ## Verwendung
