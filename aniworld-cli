@@ -27,6 +27,8 @@ USER_AGENT="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Geck
 
 # Globale Variablen
 CURRENT_TITLE=""
+CURRENT_HOSTER_NAME=""
+CURRENT_HOSTER_ID=""
 
 # === Dependencies Prüfen ===
 check_dependencies() {
@@ -218,11 +220,12 @@ select_episode_interactive() {
     echo "$selection" | grep -oP '[0-9]+'
 }
 
-# Wähle Hoster
-select_hoster_interactive() {
+# Wähle Hoster und speichere in globalen Variablen
+select_and_save_hoster() {
     local slug="$1"
     local season="$2"
     local episode="$3"
+    local force_selection="${4:-false}"
 
     local hosters
     hosters=$(get_hoster_links "$slug" "$season" "$episode")
@@ -232,30 +235,41 @@ select_hoster_interactive() {
         exit 1
     fi
 
-    # Hoster-Präferenz: Streamtape > Vidmoly > Doodstream > VOE
-    # (Streamtape und Vidmoly funktionieren oft besser mit direkten URLs)
-    local preferred_hoster
-    for hoster_name in "streamtape" "vidmoly" "doodstream" "voe"; do
-        preferred_hoster=$(echo "$hosters" | grep -i "$hoster_name" | head -1)
-        if [ -n "$preferred_hoster" ]; then
-            # Kein output - direkt Hoster verwenden
-            echo "$preferred_hoster" | cut -d'|' -f1
-            return 0
-        fi
-    done
+    local selected_line=""
 
-    # Fallback: Zeige alle Hoster zur Auswahl
-    local selection
-    selection=$(echo "$hosters" | \
-                awk -F'|' '{print $2 " (ID: " $1 ")"}' | \
-                select_with_fzf "Wähle Hoster")
-
-    if [ -z "$selection" ]; then
-        show_error "Keine Auswahl getroffen"
-        exit 1
+    # Automatische Auswahl (wenn nicht force_selection)
+    if [ "$force_selection" = "false" ]; then
+        # Hoster-Präferenz: Streamtape > Vidmoly > Doodstream > VOE
+        for hoster_name in "streamtape" "vidmoly" "doodstream" "voe"; do
+            selected_line=$(echo "$hosters" | grep -i "$hoster_name" | head -1)
+            if [ -n "$selected_line" ]; then
+                break
+            fi
+        done
     fi
 
-    echo "$selection" | grep -oP 'ID: \K[0-9]+'
+    # Manuelle Auswahl oder kein bevorzugter Hoster gefunden
+    if [ -z "$selected_line" ] || [ "$force_selection" = "true" ]; then
+        local selection
+        selection=$(echo "$hosters" | \
+                    awk -F'|' '{print $2 " (ID: " $1 ")"}' | \
+                    select_with_fzf "Wähle Hoster")
+
+        if [ -z "$selection" ]; then
+            show_error "Keine Auswahl getroffen"
+            exit 1
+        fi
+
+        local selected_id
+        selected_id=$(echo "$selection" | grep -oP 'ID: \K[0-9]+')
+        selected_line=$(echo "$hosters" | grep "^${selected_id}|")
+    fi
+
+    # Speichere in globalen Variablen
+    CURRENT_HOSTER_ID=$(echo "$selected_line" | cut -d'|' -f1)
+    CURRENT_HOSTER_NAME=$(echo "$selected_line" | cut -d'|' -f2)
+
+    echo "$CURRENT_HOSTER_ID"
 }
 
 # Spiele Episode ab
@@ -317,19 +331,27 @@ main_loop() {
 
     # Lade und spiele erste Episode im Hintergrund
     {
-        local video_url
-        video_url=$(get_video_for_episode "$slug" "$season" "$episode")
-        if [ -n "$video_url" ]; then
-            play_video "$video_url"
-            save_history "$slug" "$season" "$episode"
+        local hoster_id
+        hoster_id=$(select_and_save_hoster "$slug" "$season" "$episode" "false")
+        if [ -n "$hoster_id" ]; then
+            local video_url
+            video_url=$(extract_video_url "$hoster_id")
+            if [ -n "$video_url" ]; then
+                play_video "$video_url"
+                save_history "$slug" "$season" "$episode"
+            fi
         fi
     } &
 
     # Haupt-Loop mit Menü in while-Bedingung (exakt wie ani-cli)
     # Zeige Menü mit aktuellen Infos (dynamisch aktualisiert)
     while true; do
-        # Baue Prompt dynamisch mit aktuellen Werten
-        cmd=$(printf "next\nreplay\nprevious\nselect\nquit" | select_with_fzf "${anime_title} | S${season}E${episode}/${season_episodes}")
+        # Baue Prompt dynamisch mit aktuellen Werten und zeige aktuellen Hoster
+        local hoster_info=""
+        if [ -n "$CURRENT_HOSTER_NAME" ]; then
+            hoster_info=" | Hoster: ${CURRENT_HOSTER_NAME}"
+        fi
+        cmd=$(printf "next\nreplay\nprevious\nselect\nhoster\nquit" | select_with_fzf "${anime_title} | S${season}E${episode}/${season_episodes}${hoster_info}")
 
         # Prüfe auf quit/empty
         if [ "$cmd" = "quit" ] || [ -z "$cmd" ]; then
@@ -387,6 +409,23 @@ main_loop() {
                 episodes=$(get_episodes "$slug" "$season")
                 season_episodes=$(echo "$episodes" | wc -l)
                 ;;
+            hoster)
+                # Wähle anderen Hoster für aktuelle Episode
+                local hoster_id
+                hoster_id=$(select_and_save_hoster "$slug" "$season" "$episode" "true")
+                if [ -n "$hoster_id" ]; then
+                    # Lade Video mit neuem Hoster im Hintergrund
+                    {
+                        local video_url
+                        video_url=$(extract_video_url "$hoster_id")
+                        if [ -n "$video_url" ]; then
+                            play_video "$video_url"
+                        fi
+                    } &
+                fi
+                # Zeige Menu direkt wieder (kein continue, Episode/Season bleiben gleich)
+                continue
+                ;;
         esac
 
         # Aktualisiere CURRENT_TITLE vor dem Abspielen
@@ -394,11 +433,15 @@ main_loop() {
 
         # Lade und spiele Episode im Hintergrund (Menu bleibt sichtbar)
         {
-            local video_url
-            video_url=$(get_video_for_episode "$slug" "$season" "$episode")
-            if [ -n "$video_url" ]; then
-                play_video "$video_url"
-                save_history "$slug" "$season" "$episode"
+            local hoster_id
+            hoster_id=$(select_and_save_hoster "$slug" "$season" "$episode" "false")
+            if [ -n "$hoster_id" ]; then
+                local video_url
+                video_url=$(extract_video_url "$hoster_id")
+                if [ -n "$video_url" ]; then
+                    play_video "$video_url"
+                    save_history "$slug" "$season" "$episode"
+                fi
             fi
         } &
     done
