@@ -251,8 +251,19 @@ select_and_save_hoster() {
     # Manuelle Auswahl oder kein bevorzugter Hoster gefunden
     if [ -z "$selected_line" ] || [ "$force_selection" = "true" ]; then
         local selection
+        # Format: "Hoster [Sprache] [Qualität] (ID: xxx)"
         selection=$(echo "$hosters" | \
-                    awk -F'|' '{print $2 " (ID: " $1 ")"}' | \
+                    awk -F'|' '{
+                        hoster=$2
+                        lang=$3
+                        qual=$4
+                        id=$1
+                        # Baue Anzeige-String
+                        info=""
+                        if (lang != "N/A") info = info " [" lang "]"
+                        if (qual != "N/A") info = info " [" qual "]"
+                        print hoster info " (ID: " id ")"
+                    }' | \
                     select_with_fzf "Wähle Hoster")
 
         if [ -z "$selection" ]; then
@@ -265,9 +276,20 @@ select_and_save_hoster() {
         selected_line=$(echo "$hosters" | grep "^${selected_id}|")
     fi
 
-    # Speichere in globalen Variablen
+    # Speichere in globalen Variablen (mit Metadaten)
     CURRENT_HOSTER_ID=$(echo "$selected_line" | cut -d'|' -f1)
-    CURRENT_HOSTER_NAME=$(echo "$selected_line" | cut -d'|' -f2)
+    local hoster_name=$(echo "$selected_line" | cut -d'|' -f2)
+    local language=$(echo "$selected_line" | cut -d'|' -f3)
+    local quality=$(echo "$selected_line" | cut -d'|' -f4)
+
+    # Baue anzeige-freundlichen Namen
+    CURRENT_HOSTER_NAME="$hoster_name"
+    if [ "$language" != "N/A" ]; then
+        CURRENT_HOSTER_NAME="${CURRENT_HOSTER_NAME} [${language}]"
+    fi
+    if [ "$quality" != "N/A" ]; then
+        CURRENT_HOSTER_NAME="${CURRENT_HOSTER_NAME} [${quality}]"
+    fi
 
     echo "$CURRENT_HOSTER_ID"
 }

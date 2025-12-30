@@ -93,11 +93,11 @@ get_hoster_links() {
         show_info "Debug: HTML gespeichert in ${DATA_DIR}/debug_episode.html"
     fi
 
-    # Parse Redirect-IDs und Hoster-Namen
-    # Format: redirect_id|hoster_name
+    # Parse Redirect-IDs, Hoster-Namen und Metadaten
+    # Format: redirect_id|hoster_name|language|quality
     # Windows-kompatible Version ohne grep -oP (funktioniert mit Git Bash)
 
-    # Extrahiere alle redirect IDs und Hoster-Namen
+    # Extrahiere alle redirect IDs, Hoster-Namen und Metadaten
     echo "$html" | \
         tr '\n' ' ' | \
         sed 's/<li/\n<li/g' | \
@@ -115,23 +115,36 @@ get_hoster_links() {
                 hoster=$(echo "$line" | sed -n 's/.*<h4>\([^<]*\)<\/h4>.*/\1/p' | head -1)
             fi
 
-            # Pattern 3: data-lang-key Attribute
+            # Extrahiere Sprache (data-lang-key)
+            language=$(echo "$line" | sed -n 's/.*data-lang-key="\([^"]*\)".*/\1/p' | head -1)
+
+            # Extrahiere Qualität falls vorhanden (z.B. "720p", "1080p")
+            quality=$(echo "$line" | grep -oE '[0-9]{3,4}p' | head -1)
+
+            # Wenn keine Sprache gefunden, versuche aus anderen Attributen
+            if [ -z "$language" ]; then
+                # Suche nach GerDub, GerSub, EngSub, etc. im Text
+                language=$(echo "$line" | grep -oE '(GerDub|GerSub|EngSub|Ger|Eng)' | head -1)
+            fi
+
+            # Fallback: Wenn kein Hoster-Name gefunden, nutze language oder generischen Namen
             if [ -z "$hoster" ]; then
-                hoster=$(echo "$line" | sed -n 's/.*data-lang-key="\([^"]*\)".*/\1/p' | head -1)
+                if [ -n "$language" ]; then
+                    hoster="$language"
+                else
+                    hoster="Hoster_${redirect_id}"
+                fi
             fi
 
             # Debug output
             if [ -n "${DEBUG:-}" ]; then
-                echo "DEBUG: redirect_id=$redirect_id hoster=$hoster" >&2
+                echo "DEBUG: redirect_id=$redirect_id hoster=$hoster language=$language quality=$quality" >&2
             fi
 
             # Nur ausgeben wenn redirect_id vorhanden
             if [ -n "$redirect_id" ]; then
-                # Wenn kein Hoster-Name gefunden, generischen Namen verwenden
-                if [ -z "$hoster" ]; then
-                    hoster="Hoster_${redirect_id}"
-                fi
-                echo "${redirect_id}|${hoster}"
+                # Format: redirect_id|hoster|language|quality
+                echo "${redirect_id}|${hoster}|${language:-N/A}|${quality:-N/A}"
             fi
         done
 }
