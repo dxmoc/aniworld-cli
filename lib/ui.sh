@@ -29,8 +29,7 @@ select_with_fzf() {
 
     # Vollbild-Modus wie ani-cli (kein --height)
     if command -v tty >/dev/null 2>&1 && tty -s 2>/dev/null; then
-        echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi 0</dev/tty 2>/dev/null || \
-        echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi
+        echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi </dev/tty
     else
         echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi
     fi
