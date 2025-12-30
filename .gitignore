@@ -1,0 +1,37 @@
+# Data files
+data/
+*.log
+debug.log
+*.txt
+
+# Test files
+test-*.sh
+quick-test.sh
+debug-workflow.sh
+
+# Temporary files
+/tmp/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-*
+.cache/
+
+# Python (if any helper scripts)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Backup files
+*.bak
+*.backup

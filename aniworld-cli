@@ -1,0 +1,458 @@
+#!/usr/bin/env bash
+# aniworld-cli - Deutsche Anime CLI
+# Ein CLI-Tool zum Streamen von Animes von AniWorld.to
+
+set -euo pipefail
+
+# Version
+VERSION="1.0.0"
+
+# === Konfiguration ===
+# Resolve symlink to get actual script directory
+if [ -L "${BASH_SOURCE[0]}" ]; then
+    SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+else
+    SCRIPT_PATH="${BASH_SOURCE[0]}"
+fi
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+LIB_DIR="$SCRIPT_DIR/lib"
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/aniworld-cli"
+HISTORY_FILE="$DATA_DIR/history.txt"
+CONFIG_FILE="$DATA_DIR/config"
+
+BASE_URL="https://aniworld.to"
+USER_AGENT="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+# Globale Variablen
+CURRENT_TITLE=""
+
+# === Dependencies Prüfen ===
+check_dependencies() {
+    local missing=()
+
+    for cmd in curl grep sed fzf; do
+        if ! command -v "$cmd" &>/dev/null; then
+            missing+=("$cmd")
+        fi
+    done
+
+    if ! command -v mpv &>/dev/null && ! command -v vlc &>/dev/null; then
+        missing+=("mpv oder vlc")
+    fi
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        echo "FEHLER: Folgende Dependencies fehlen: ${missing[*]}"
+        echo ""
+        echo "Installation:"
+        echo "  Ubuntu/Debian: sudo apt install curl grep sed fzf mpv"
+        echo "  Arch: sudo pacman -S curl grep sed fzf mpv"
+        echo "  Fedora: sudo dnf install curl grep sed fzf mpv"
+        exit 1
+    fi
+}
+
+# === Source Libraries ===
+source "$LIB_DIR/ui.sh"
+source "$LIB_DIR/scraper.sh"
+source "$LIB_DIR/player.sh"
+source "$LIB_DIR/history.sh"
+
+# === Hauptfunktionen ===
+
+# Zeige Help
+show_help() {
+    cat << EOF
+aniworld-cli - Deutsche Anime CLI
+
+USAGE:
+    aniworld-cli [OPTIONS] [SUCHBEGRIFF]
+
+OPTIONS:
+    -h, --help          Zeige diese Hilfe
+    -v, --version       Zeige Version
+    -c, --continue      Setze letzten Anime fort
+    --debug             Debug-Modus
+
+BEISPIELE:
+    aniworld-cli "One Piece"
+    aniworld-cli --continue
+    aniworld-cli -h
+
+DEPENDENCIES:
+    curl, grep, sed, fzf, mpv (oder vlc)
+EOF
+}
+
+# Wähle Anime aus Suchergebnissen
+select_anime() {
+    local search_term="$1"
+
+    local results
+    results=$(search_anime "$search_term")
+
+    if [ -z "$results" ]; then
+        show_error "Keine Ergebnisse für '${search_term}' gefunden"
+        exit 1
+    fi
+
+    local selection
+    selection=$(echo "$results" | select_with_fzf "Wähle Anime")
+
+    if [ -z "$selection" ]; then
+        show_error "Keine Auswahl getroffen"
+        exit 1
+    fi
+
+    # Extrahiere Slug
+    echo "$selection" | cut -d'|' -f2
+}
+
+# Wähle Staffel
+select_season_interactive() {
+    local slug="$1"
+    local continue_season="$2"
+
+    local seasons
+    seasons=$(get_seasons "$slug")
+
+    if [ -z "$seasons" ]; then
+        show_error "Keine Staffeln gefunden"
+        exit 1
+    fi
+
+    # Wenn Fortsetzen und Staffel gegeben, verwende diese
+    if [ -n "$continue_season" ]; then
+        echo "$continue_season"
+        return 0
+    fi
+
+    local selection
+    selection=$(echo "$seasons" | sed 's/^/Staffel /' | select_with_fzf "Wähle Staffel")
+
+    if [ -z "$selection" ]; then
+        show_error "Keine Auswahl getroffen"
+        exit 1
+    fi
+
+    echo "$selection" | grep -oP '[0-9]+'
+}
+
+# Wähle Episode
+select_episode_interactive() {
+    local slug="$1"
+    local season="$2"
+    local continue_episode="$3"
+
+    local episodes
+    episodes=$(get_episodes "$slug" "$season")
+
+    if [ -z "$episodes" ]; then
+        show_error "Keine Episoden gefunden"
+        exit 1
+    fi
+
+    # Wenn Fortsetzen und Episode gegeben, verwende diese
+    if [ -n "$continue_episode" ]; then
+        echo "$continue_episode"
+        return 0
+    fi
+
+    local selection
+    selection=$(echo "$episodes" | sed 's/^/Episode /' | select_with_fzf "Wähle Episode")
+
+    if [ -z "$selection" ]; then
+        show_error "Keine Auswahl getroffen"
+        exit 1
+    fi
+
+    echo "$selection" | grep -oP '[0-9]+'
+}
+
+# Wähle Hoster
+select_hoster_interactive() {
+    local slug="$1"
+    local season="$2"
+    local episode="$3"
+
+    local hosters
+    hosters=$(get_hoster_links "$slug" "$season" "$episode")
+
+    if [ -z "$hosters" ]; then
+        show_error "Keine Hoster gefunden"
+        exit 1
+    fi
+
+    # Hoster-Präferenz: Streamtape > Vidmoly > Doodstream > VOE
+    # (Streamtape und Vidmoly funktionieren oft besser mit direkten URLs)
+    local preferred_hoster
+    for hoster_name in "streamtape" "vidmoly" "doodstream" "voe"; do
+        preferred_hoster=$(echo "$hosters" | grep -i "$hoster_name" | head -1)
+        if [ -n "$preferred_hoster" ]; then
+            # Kein output - direkt Hoster verwenden
+            echo "$preferred_hoster" | cut -d'|' -f1
+            return 0
+        fi
+    done
+
+    # Fallback: Zeige alle Hoster zur Auswahl
+    local selection
+    selection=$(echo "$hosters" | \
+                awk -F'|' '{print $2 " (ID: " $1 ")"}' | \
+                select_with_fzf "Wähle Hoster")
+
+    if [ -z "$selection" ]; then
+        show_error "Keine Auswahl getroffen"
+        exit 1
+    fi
+
+    echo "$selection" | grep -oP 'ID: \K[0-9]+'
+}
+
+# Spiele Episode ab
+play_episode() {
+    local slug="$1"
+    local season="$2"
+    local episode="$3"
+
+    show_info "Staffel ${season}, Episode ${episode}"
+
+    # Hole Hoster
+    local hoster_id
+    hoster_id=$(select_hoster_interactive "$slug" "$season" "$episode")
+
+    if [ -z "$hoster_id" ]; then
+        return 1
+    fi
+
+    # Extrahiere Video-URL
+    local video_url
+    video_url=$(extract_video_url "$hoster_id")
+
+    if [ -z "$video_url" ]; then
+        show_error "Konnte Video-URL nicht extrahieren"
+        return 1
+    fi
+
+    # Setze Titel für Player
+    CURRENT_TITLE=$(get_anime_title "$slug")
+    CURRENT_TITLE="${CURRENT_TITLE} - S${season}E${episode}"
+
+    # Spiele ab
+    play_video "$video_url"
+
+    # Speichere in History
+    save_history "$slug" "$season" "$episode"
+
+    return 0
+}
+
+# Hauptschleife (1:1 wie ani-cli)
+main_loop() {
+    local slug="$1"
+    local season="$2"
+    local episode="$3"
+
+    # Hole Episode-Liste einmal
+    local episodes
+    episodes=$(get_episodes "$slug" "$season")
+
+    # Spiele erste Episode (wie ani-cli: play vor der while-Schleife)
+    local video_url
+    video_url=$(get_video_for_episode "$slug" "$season" "$episode")
+
+    if [ -z "$video_url" ]; then
+        show_error "Konnte Video-URL nicht laden"
+        return 1
+    fi
+
+    play_video "$video_url"
+    save_history "$slug" "$season" "$episode"
+
+    # Haupt-Loop mit Menü in while-Bedingung (exakt wie ani-cli)
+    while cmd=$(printf "next\nreplay\nprevious\nselect\nquit" | select_with_fzf "Playing: ${CURRENT_TITLE} S${season}E${episode}"); do
+        case "$cmd" in
+            next)
+                # Nächste Episode
+                episode=$((episode + 1))
+                local max_episode
+                max_episode=$(echo "$episodes" | tail -1)
+
+                if [ "$episode" -gt "$max_episode" ]; then
+                    # Versuche nächste Staffel
+                    season=$((season + 1))
+                    episode=1
+
+                    local seasons
+                    seasons=$(get_seasons "$slug")
+                    local max_season
+                    max_season=$(echo "$seasons" | tail -1)
+
+                    if [ "$season" -gt "$max_season" ]; then
+                        show_info "Keine weiteren Episoden verfügbar"
+                        break
+                    fi
+
+                    episodes=$(get_episodes "$slug" "$season")
+                fi
+                ;;
+            replay)
+                # Replay - episode und season bleiben gleich
+                ;;
+            previous)
+                if [ "$episode" -gt 1 ]; then
+                    episode=$((episode - 1))
+                else
+                    # Gehe zu vorheriger Staffel
+                    if [ "$season" -gt 1 ]; then
+                        season=$((season - 1))
+                        episodes=$(get_episodes "$slug" "$season")
+                        episode=$(echo "$episodes" | tail -1)
+                    else
+                        show_info "Bereits bei der ersten Episode"
+                        continue
+                    fi
+                fi
+                ;;
+            select)
+                # Wähle neue Staffel/Episode
+                season=$(select_season_interactive "$slug" "")
+                episode=$(select_episode_interactive "$slug" "$season" "")
+                episodes=$(get_episodes "$slug" "$season")
+                ;;
+            quit|"")
+                break
+                ;;
+        esac
+
+        # Hole und spiele Episode (wie ani-cli: play am Ende der Schleife)
+        video_url=$(get_video_for_episode "$slug" "$season" "$episode")
+
+        if [ -z "$video_url" ]; then
+            show_error "Konnte Video-URL nicht laden"
+            break
+        fi
+
+        play_video "$video_url"
+        save_history "$slug" "$season" "$episode"
+    done
+}
+
+# === Main Entry Point ===
+main() {
+    check_dependencies
+
+    # Argument Parsing
+    local search_term=""
+    local continue_mode=false
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            -v|--version)
+                echo -e "${BLUE}aniworld-cli${RESET} version ${GREEN}${VERSION}${RESET}"
+                echo -e "Deutsche Anime Streaming CLI"
+                exit 0
+                ;;
+            -c|--continue)
+                continue_mode=true
+                shift
+                ;;
+            --debug)
+                set -x
+                shift
+                ;;
+            *)
+                search_term="$1"
+                shift
+                ;;
+        esac
+    done
+
+    # Erstelle data-Ordner falls nicht vorhanden
+    mkdir -p "$DATA_DIR"
+
+    # Continue-Modus
+    if [ "$continue_mode" = true ]; then
+        if [ ! -f "$HISTORY_FILE" ] || [ ! -s "$HISTORY_FILE" ]; then
+            show_error "Keine History gefunden"
+            exit 1
+        fi
+
+        local last_entry
+        last_entry=$(tail -1 "$HISTORY_FILE")
+
+        local slug season episode
+        slug=$(echo "$last_entry" | cut -d'|' -f1)
+        season=$(echo "$last_entry" | cut -d'|' -f2)
+        episode=$(echo "$last_entry" | cut -d'|' -f3)
+
+        local title
+        title=$(get_anime_title "$slug")
+
+        show_info "Fortsetzen: ${title} - S${season}E${episode}"
+
+        main_loop "$slug" "$season" "$episode"
+        exit 0
+    fi
+
+    # Interaktiver Modus (wie ani-cli)
+    if [ -z "$search_term" ]; then
+        show_info "Checking dependencies..."
+        echo -ne "${BLUE}Search anime: ${RESET}"
+        read -r search_term
+
+        # Wenn immer noch leer, exit
+        if [ -z "$search_term" ]; then
+            exit 0
+        fi
+    fi
+
+    # Suche Anime
+    local slug
+    slug=$(select_anime "$search_term")
+
+    # Hole Titel
+    CURRENT_TITLE=$(get_anime_title "$slug")
+    show_info "Gewählt: ${CURRENT_TITLE}"
+
+    # Prüfe History und zeige fzf-Menü (wie ani-cli)
+    local continue_season=""
+    local continue_episode=""
+
+    if has_history "$slug"; then
+        local last_episode
+        last_episode=$(get_last_episode "$slug")
+        local last_season last_ep
+        last_season=$(echo "$last_episode" | cut -d'|' -f1)
+        last_ep=$(echo "$last_episode" | cut -d'|' -f2)
+
+        # fzf-Menü für Continue (statt Y/n)
+        local choice
+        choice=$(printf "Continue from S${last_season}E${last_ep}\nStart from beginning" | \
+                 select_with_fzf "Continue watching ${CURRENT_TITLE}?")
+
+        case "$choice" in
+            "Continue from"*)
+                continue_season="$last_season"
+                continue_episode="$last_ep"
+                ;;
+            "Start from"*|"")
+                # Start from beginning
+                ;;
+        esac
+    fi
+
+    # Wähle Staffel & Episode
+    local season episode
+    season=$(select_season_interactive "$slug" "$continue_season")
+    episode=$(select_episode_interactive "$slug" "$season" "$continue_episode")
+
+    # Starte Hauptschleife
+    main_loop "$slug" "$season" "$episode"
+}
+
+# Run
+main "$@"
