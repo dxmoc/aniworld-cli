@@ -286,6 +286,25 @@ get_anime_title() {
         head -1
 }
 
+# Hole Gesamt-Episodenanzahl über alle Staffeln
+get_total_episode_count() {
+    local slug="$1"
+
+    local seasons
+    seasons=$(get_seasons "$slug")
+
+    local total=0
+    while read -r season; do
+        local episodes
+        episodes=$(get_episodes "$slug" "$season")
+        local count
+        count=$(echo "$episodes" | wc -l)
+        total=$((total + count))
+    done <<< "$seasons"
+
+    echo "$total"
+}
+
 # Hole Video-URL für Episode (zentralisiert mit Loading-Nachrichten)
 get_video_for_episode() {
     local slug="$1"

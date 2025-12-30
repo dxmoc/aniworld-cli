@@ -269,14 +269,21 @@ main_loop() {
     local episode="$3"
 
     # Hole Anime-Titel einmal (bleibt konstant)
-    local anime_title
-    anime_title=$(get_anime_title "$slug")
+    local anime_title_raw
+    anime_title_raw=$(get_anime_title "$slug")
 
-    # Hole Episode-Liste einmal
+    # Hole Gesamt-Episodenanzahl über alle Staffeln
+    local total_episode_count
+    total_episode_count=$(get_total_episode_count "$slug")
+
+    # Anime-Titel mit Episodenanzahl
+    local anime_title="${anime_title_raw} (${total_episode_count})"
+
+    # Hole Episode-Liste für aktuelle Staffel
     local episodes
     episodes=$(get_episodes "$slug" "$season")
-    local total_episodes
-    total_episodes=$(echo "$episodes" | wc -l)
+    local season_episodes
+    season_episodes=$(echo "$episodes" | wc -l)
 
     # Aktualisiere CURRENT_TITLE für erste Episode
     CURRENT_TITLE="${anime_title} - S${season}E${episode}"
@@ -297,7 +304,7 @@ main_loop() {
     # Zeige Menü mit aktuellen Infos (dynamisch aktualisiert)
     while true; do
         # Baue Prompt dynamisch mit aktuellen Werten
-        cmd=$(printf "next\nreplay\nprevious\nselect\nquit" | select_with_fzf "${anime_title} | S${season}E${episode}/${total_episodes}")
+        cmd=$(printf "next\nreplay\nprevious\nselect\nquit" | select_with_fzf "${anime_title} | S${season}E${episode}/${season_episodes}")
 
         # Prüfe auf quit/empty
         if [ "$cmd" = "quit" ] || [ -z "$cmd" ]; then
@@ -326,7 +333,7 @@ main_loop() {
                     fi
 
                     episodes=$(get_episodes "$slug" "$season")
-                    total_episodes=$(echo "$episodes" | wc -l)
+                    season_episodes=$(echo "$episodes" | wc -l)
                 fi
                 ;;
             replay)
@@ -340,7 +347,7 @@ main_loop() {
                     if [ "$season" -gt 1 ]; then
                         season=$((season - 1))
                         episodes=$(get_episodes "$slug" "$season")
-                        total_episodes=$(echo "$episodes" | wc -l)
+                        season_episodes=$(echo "$episodes" | wc -l)
                         episode=$(echo "$episodes" | tail -1)
                     else
                         show_info "Bereits bei der ersten Episode"
@@ -353,7 +360,7 @@ main_loop() {
                 season=$(select_season_interactive "$slug" "")
                 episode=$(select_episode_interactive "$slug" "$season" "")
                 episodes=$(get_episodes "$slug" "$season")
-                total_episodes=$(echo "$episodes" | wc -l)
+                season_episodes=$(echo "$episodes" | wc -l)
                 ;;
         esac
 
@@ -426,8 +433,11 @@ main() {
         season=$(echo "$last_entry" | cut -d'|' -f2)
         episode=$(echo "$last_entry" | cut -d'|' -f3)
 
-        local title
-        title=$(get_anime_title "$slug")
+        local title_raw
+        title_raw=$(get_anime_title "$slug")
+        local total_episode_count
+        total_episode_count=$(get_total_episode_count "$slug")
+        local title="${title_raw} (${total_episode_count})"
 
         show_info "Fortsetzen: ${title} - S${season}E${episode}"
 
@@ -451,9 +461,12 @@ main() {
     local slug
     slug=$(select_anime "$search_term")
 
-    # Hole Titel (ohne Episode-Info hier, wird später in main_loop gesetzt)
-    local anime_title
-    anime_title=$(get_anime_title "$slug")
+    # Hole Titel mit Episodenanzahl
+    local anime_title_raw
+    anime_title_raw=$(get_anime_title "$slug")
+    local total_episode_count
+    total_episode_count=$(get_total_episode_count "$slug")
+    local anime_title="${anime_title_raw} (${total_episode_count})"
     show_info "Gewählt: ${anime_title}"
 
     # Prüfe History und zeige fzf-Menü (wie ani-cli)
@@ -470,7 +483,7 @@ main() {
         # fzf-Menü für Continue (statt Y/n)
         local choice
         choice=$(printf "Continue from S${last_season}E${last_ep}\nStart from beginning" | \
-                 select_with_fzf "Continue watching ${CURRENT_TITLE}?")
+                 select_with_fzf "Continue watching ${anime_title}?")
 
         case "$choice" in
             "Continue from"*)
