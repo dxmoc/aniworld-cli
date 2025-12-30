@@ -375,9 +375,14 @@ main_loop() {
         fi
         cmd=$(printf "next\nreplay\nprevious\nselect\nhoster\nquit" | select_with_fzf "${anime_title} | S${season}E${episode}/${season_episodes}${hoster_info}")
 
-        # Prüfe auf quit/empty
-        if [ "$cmd" = "quit" ] || [ -z "$cmd" ]; then
+        # Prüfe auf quit
+        if [ "$cmd" = "quit" ]; then
             break
+        fi
+
+        # Bei leerem cmd (ESC/Abbruch) zurück zum Menü
+        if [ -z "$cmd" ]; then
+            continue
         fi
         case "$cmd" in
             next)
