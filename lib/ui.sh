@@ -24,29 +24,12 @@ clear_loading() {
 # fzf-Wrapper für Auswahl (Vollbild wie ani-cli)
 select_with_fzf() {
     local prompt="$1"
-
-    # WICHTIG: Lese Input ZUERST, bevor wir FDs manipulieren
     local input
     input=$(cat)
 
-    # Debug: Zeige wie viele Zeilen Input wir haben
-    local line_count=$(echo "$input" | wc -l)
-    echo "DEBUG: Input hat $line_count Zeilen" >&2
-    if [ -z "$input" ]; then
-        echo "DEBUG: WARNING - Input ist LEER!" >&2
-    fi
-
-    # Öffne Terminal auf FD 3 für fzf's interaktive Eingabe
-    exec 3< /dev/tty
-
-    # Übergebe Daten via echo (stdin), aber Tastatur-Input kommt von FD 3
-    echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse <&3
-    local exit_code=$?
-
-    # Schließe FD 3
-    exec 3<&-
-
-    return $exit_code
+    # Einfache Version: fzf bekommt Daten via Pipe, liest Tastatur automatisch vom Terminal
+    # --no-mouse für Windows-Kompatibilität
+    echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse
 }
 
 # Zeige Fehler

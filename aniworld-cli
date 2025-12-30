@@ -128,7 +128,7 @@ select_anime() {
         {
             ep_count=$(get_total_episode_count "$slug")
             echo "${title} (${ep_count})|${slug}" >> "$tmpfile"
-        } &
+        } </dev/null &
 
         job_count=$((job_count + 1))
         # Warte wenn zu viele Jobs laufen
@@ -367,7 +367,7 @@ main_loop() {
                 save_history "$slug" "$season" "$episode"
             fi
         fi
-    } &
+    } </dev/null &
 
     # Haupt-Loop mit Menü in while-Bedingung (exakt wie ani-cli)
     # Zeige Menü mit aktuellen Infos (dynamisch aktualisiert)
@@ -482,7 +482,7 @@ main_loop() {
                         if [ -n "$video_url" ]; then
                             play_video "$video_url"
                         fi
-                    } &
+                    } </dev/null &
                 fi
                 # Zeige Menu direkt wieder (kein continue, Episode/Season bleiben gleich)
                 continue
@@ -504,7 +504,7 @@ main_loop() {
                     save_history "$slug" "$season" "$episode"
                 fi
             fi
-        } &
+        } </dev/null &
     done
 }
 
