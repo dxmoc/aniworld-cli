@@ -363,18 +363,6 @@ main_loop() {
             local video_url
             video_url=$(extract_video_url "$hoster_id")
             if [ -n "$video_url" ]; then
-                # Extrahiere Qualität aus Video-URL/Dateiname
-                CURRENT_VIDEO_QUALITY=$(echo "$video_url" | grep -oE '[0-9]{3,4}p' | head -1)
-                if [ -z "$CURRENT_VIDEO_QUALITY" ]; then
-                    # Suche nach HD-Keywords
-                    if echo "$video_url" | grep -qi "1080"; then
-                        CURRENT_VIDEO_QUALITY="1080p"
-                    elif echo "$video_url" | grep -qi "720"; then
-                        CURRENT_VIDEO_QUALITY="720p"
-                    elif echo "$video_url" | grep -qi "480"; then
-                        CURRENT_VIDEO_QUALITY="480p"
-                    fi
-                fi
                 play_video "$video_url"
                 save_history "$slug" "$season" "$episode"
             fi
@@ -405,14 +393,10 @@ main_loop() {
             echo "DEBUG: CURRENT_HOSTER_NAME=$CURRENT_HOSTER_NAME" >&2
         fi
 
-        # Baue Prompt dynamisch mit aktuellen Werten und zeige aktuellen Hoster + Qualität
+        # Baue Prompt dynamisch mit aktuellen Werten und zeige aktuellen Hoster
         local hoster_info=""
         if [ -n "$CURRENT_HOSTER_NAME" ]; then
             hoster_info=" | Hoster: ${CURRENT_HOSTER_NAME}"
-            # Füge Qualität hinzu, falls verfügbar
-            if [ -n "$CURRENT_VIDEO_QUALITY" ]; then
-                hoster_info="${hoster_info} [${CURRENT_VIDEO_QUALITY}]"
-            fi
         fi
 
         cmd=$(printf "next\nreplay\nprevious\nselect\nhoster\nquit" | select_with_fzf "${anime_title} | S${season}E${episode}/${season_episodes}${hoster_info}")
@@ -510,17 +494,6 @@ main_loop() {
                         local video_url
                         video_url=$(extract_video_url "$hoster_id")
                         if [ -n "$video_url" ]; then
-                            # Extrahiere Qualität aus Video-URL
-                            CURRENT_VIDEO_QUALITY=$(echo "$video_url" | grep -oE '[0-9]{3,4}p' | head -1)
-                            if [ -z "$CURRENT_VIDEO_QUALITY" ]; then
-                                if echo "$video_url" | grep -qi "1080"; then
-                                    CURRENT_VIDEO_QUALITY="1080p"
-                                elif echo "$video_url" | grep -qi "720"; then
-                                    CURRENT_VIDEO_QUALITY="720p"
-                                elif echo "$video_url" | grep -qi "480"; then
-                                    CURRENT_VIDEO_QUALITY="480p"
-                                fi
-                            fi
                             play_video "$video_url"
                         fi
                     } </dev/null &
@@ -542,17 +515,6 @@ main_loop() {
                 local video_url
                 video_url=$(extract_video_url "$hoster_id")
                 if [ -n "$video_url" ]; then
-                    # Extrahiere Qualität aus Video-URL
-                    CURRENT_VIDEO_QUALITY=$(echo "$video_url" | grep -oE '[0-9]{3,4}p' | head -1)
-                    if [ -z "$CURRENT_VIDEO_QUALITY" ]; then
-                        if echo "$video_url" | grep -qi "1080"; then
-                            CURRENT_VIDEO_QUALITY="1080p"
-                        elif echo "$video_url" | grep -qi "720"; then
-                            CURRENT_VIDEO_QUALITY="720p"
-                        elif echo "$video_url" | grep -qi "480"; then
-                            CURRENT_VIDEO_QUALITY="480p"
-                        fi
-                    fi
                     play_video "$video_url"
                     save_history "$slug" "$season" "$episode"
                 fi
