@@ -27,14 +27,8 @@ select_with_fzf() {
     local input
     input=$(cat)
 
-    # Windows/Git Bash: Verwende winpty wenn verfügbar (für bessere TTY-Kompatibilität)
-    local fzf_cmd="fzf"
-    if command -v winpty >/dev/null 2>&1 && [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-        fzf_cmd="winpty fzf"
-    fi
-
-    # Starte fzf mit Windows-kompatiblen Optionen
-    echo "$input" | $fzf_cmd --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse
+    # Einfache Version für Windows-Kompatibilität
+    echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse
 }
 
 # Zeige Fehler
