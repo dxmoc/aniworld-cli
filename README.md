@@ -11,8 +11,9 @@ Inspiriert von [ani-cli](https://github.com/pystardust/ani-cli), aber speziell f
 - 📺 **Vollbild-fzf**: Nutzt das komplette Terminal-Fenster für bessere Übersicht
 - 📜 **Watch History**: Speichere deinen Fortschritt und setze dort fort, wo du aufgehört hast
 - 🎬 **Continue-Menü**: Elegantes fzf-Menü statt Y/n-Abfrage
-- 🎮 **Post-Episode-Menü**: Wähle nach jeder Episode: next, replay, previous, select, quit
-- 🌐 **Automatische Hoster-Auswahl**: Intelligente Auswahl (Streamtape → Vidmoly → Doodstream → VOE)
+- 🎮 **Post-Episode-Menü**: Wähle nach jeder Episode: next, replay, previous, select, hoster, quit
+- 🌐 **Intelligente Hoster-Auswahl**: Automatische Auswahl (Streamtape → Vidmoly → Doodstream → VOE)
+- 🔄 **Manuelle Hoster-Wechsel**: Wechsle zwischen Streaming-Anbietern während der Wiedergabe
 - 🎥 **mpv/vlc Integration**: Nahtlose Video-Player-Integration mit yt-dlp Support
 - 🚀 **Binge-Watch-Modus**: Fließend durch Episoden navigieren
 - 🎨 **Clean UI**: Keine Console-Spam, nur fzf-Menüs und minimale Loading-Nachrichten
@@ -266,7 +267,13 @@ Nach jeder Episode erscheint automatisch ein fzf-Menü:
   replay    - Episode wiederholen
   previous  - Vorherige Episode
   select    - Andere Episode wählen
+  hoster    - Hoster/Qualität wechseln
   quit      - Beenden
+```
+
+Das Menü zeigt auch den aktuellen Hoster an:
+```
+Cowboy Bebop | S1E5/26 | Hoster: Streamtape
 ```
 
 ### Debug-Modus
@@ -282,6 +289,34 @@ Der Debug-Modus:
 - Zeigt detaillierte Shell-Ausgaben
 - Speichert HTML-Dateien in `~/.local/share/aniworld-cli/debug_episode.html`
 - Gibt Hoster-Extraktions-Details aus
+
+### Hoster-Auswahl
+
+aniworld-cli wählt automatisch den besten verfügbaren Hoster basierend auf folgender Priorität:
+1. **Streamtape** - Meistens die beste Qualität und Zuverlässigkeit
+2. **Vidmoly** - Gute Alternative mit hoher Verfügbarkeit
+3. **Doodstream** - Fallback-Option
+4. **VOE** - Letzte Alternative
+
+#### Manueller Hoster-Wechsel
+
+Du kannst jederzeit während der Wiedergabe den Hoster wechseln:
+
+1. Wähle **"hoster"** im Post-Episode-Menü
+2. Dir werden alle verfügbaren Hoster für die aktuelle Episode angezeigt
+3. Wähle einen Hoster aus der Liste
+4. Das Video wird mit dem neuen Hoster geladen und abgespielt
+5. Das Menü bleibt sichtbar und zeigt den neuen Hoster an
+
+**Anwendungsfälle:**
+- Ein Hoster lädt zu langsam → Wechsle zu einem anderen
+- Video-Qualität ist schlecht → Probiere einen anderen Hoster
+- Hoster ist offline → Wähle eine funktionierende Alternative
+
+Der aktuelle Hoster wird immer im Menü-Prompt angezeigt:
+```
+One Piece | S1E42/61 | Hoster: Streamtape
+```
 
 ### Hilfe anzeigen
 
@@ -312,13 +347,14 @@ Das Uninstall-Script wird:
 
 1. **Start**: `aniworld-cli` (ohne Argument für interaktiven Modus)
 2. **Suche**: Gib einen Anime-Titel ein (z.B. "One Piece")
-3. **Auswahl**: Wähle aus den Suchergebnissen mit fzf-Vollbild
+3. **Auswahl**: Wähle aus den Suchergebnissen mit fzf-Vollbild (zeigt Episodenanzahl)
 4. **History-Check**: Falls vorhanden, fzf-Menü zum Fortsetzen oder Neustart
 5. **Staffel wählen**: Wähle die gewünschte Staffel (fzf-Vollbild)
 6. **Episode wählen**: Wähle die gewünschte Episode (fzf-Vollbild)
 7. **Hoster-Auswahl**: Automatische Auswahl des besten Hosters (Streamtape > Vidmoly > Doodstream > VOE)
-8. **Streaming**: Video wird in mpv/vlc abgespielt (keine Console-Ausgabe)
-9. **Post-Episode-Menü**: Wähle zwischen next, replay, previous, select oder quit
+8. **Streaming**: Video wird in mpv/vlc abgespielt (im Hintergrund, Menü bleibt sichtbar)
+9. **Post-Episode-Menü**: Wähle zwischen next, replay, previous, select, hoster oder quit
+   - **hoster**: Wechsle zu einem anderen Streaming-Anbieter für bessere Qualität/Geschwindigkeit
 10. **Loop**: Zurück zu Schritt 8 für nahtloses Binge-Watching
 
 ## Datei-Struktur
@@ -402,7 +438,7 @@ Dieses Tool greift auf Inhalte von AniWorld.to zu. Die Legalität des Streamens 
 - Keine Download-Funktion (nur Streaming)
 - Hoster-Verfügbarkeit kann variieren
 - Manche Hoster haben Anti-Scraping-Maßnahmen
-- Qualitätsauswahl ist vom Hoster abhängig
+- Video-Qualität ist vom Hoster abhängig (nutze die Hoster-Auswahl um bessere Qualität zu finden)
 
 ## Contributing
 
