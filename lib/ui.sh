@@ -27,9 +27,13 @@ select_with_fzf() {
     local input
     input=$(cat)
 
-    # Windows/Git Bash: fzf braucht expliziten Zugriff auf das Terminal
-    # Verwende Command Substitution mit explizitem stdin vom TTY
-    echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse --bind=ctrl-c:abort < "$(tty)" 2>&1
+    # Windows/Git Bash Fix: Öffne stdin explizit auf FD 3 vom Terminal
+    # Dann leite fzf stdin von FD 3 um
+    exec 3< /dev/tty
+    echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse <&3
+    local result=$?
+    exec 3<&-  # Schließe FD 3
+    return $result
 }
 
 # Zeige Fehler
