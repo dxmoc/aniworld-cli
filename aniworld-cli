@@ -36,8 +36,12 @@ check_dependencies() {
         fi
     done
 
+    # Check für Video Player (Windows-kompatibel)
     if ! command -v mpv &>/dev/null && ! command -v vlc &>/dev/null; then
-        missing+=("mpv oder vlc")
+        # Windows: VLC könnte als vlc.exe existieren
+        if ! command -v mpv.exe &>/dev/null && ! command -v vlc.exe &>/dev/null; then
+            missing+=("mpv oder vlc")
+        fi
     fi
 
     if [ ${#missing[@]} -gt 0 ]; then
@@ -47,6 +51,7 @@ check_dependencies() {
         echo "  Ubuntu/Debian: sudo apt install curl grep sed fzf mpv"
         echo "  Arch: sudo pacman -S curl grep sed fzf mpv"
         echo "  Fedora: sudo dnf install curl grep sed fzf mpv"
+        echo "  Windows (Git Bash): scoop install fzf mpv yt-dlp"
         exit 1
     fi
 }
