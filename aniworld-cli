@@ -368,16 +368,23 @@ main_loop() {
             fi
         fi
     } </dev/null &
+    local bg_pid=$!
 
-    # Windows-Fix: Warte, bis mpv gestartet ist (verhindert Race Condition)
-    # Mit --debug ist das Timing anders, daher brauchen wir diese Pause
-    sleep 1.5
+    # Windows-Fix: Warte, bis Background-Prozess abgeschlossen ist
+    # Dann ist mpv gestartet und stört fzf nicht mehr
+    wait "$bg_pid" 2>/dev/null || true
+    sleep 0.5
 
     # Haupt-Loop mit Menü in while-Bedingung (exakt wie ani-cli)
     # Zeige Menü mit aktuellen Infos (dynamisch aktualisiert)
+    local prev_bg_pid=""
     while true; do
-        # Windows-Fix: Kurze Pause damit mpv das Terminal freigibt
-        sleep 1
+        # Windows-Fix: Warte auf vorherigen Background-Prozess
+        if [ -n "$prev_bg_pid" ]; then
+            wait "$prev_bg_pid" 2>/dev/null || true
+            sleep 0.5
+        fi
+        prev_bg_pid=""
 
         # Debug logging
         if [ -n "${DEBUG:-}" ]; then
@@ -490,6 +497,7 @@ main_loop() {
                             play_video "$video_url"
                         fi
                     } </dev/null &
+                    prev_bg_pid=$!
                 fi
                 # Zeige Menu direkt wieder (kein continue, Episode/Season bleiben gleich)
                 continue
@@ -512,6 +520,7 @@ main_loop() {
                 fi
             fi
         } </dev/null &
+        prev_bg_pid=$!
     done
 }
 
