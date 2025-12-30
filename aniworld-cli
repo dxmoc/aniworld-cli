@@ -355,6 +355,10 @@ main_loop() {
     {
         local hoster_id
         hoster_id=$(select_and_save_hoster "$slug" "$season" "$episode" "false")
+        local exit_code=$?
+        if [ -n "${DEBUG:-}" ]; then
+            echo "DEBUG: select_and_save_hoster returned code=$exit_code hoster_id='$hoster_id'" >&2
+        fi
         if [ -n "$hoster_id" ]; then
             local video_url
             video_url=$(extract_video_url "$hoster_id")
@@ -368,12 +372,24 @@ main_loop() {
     # Haupt-Loop mit Menü in while-Bedingung (exakt wie ani-cli)
     # Zeige Menü mit aktuellen Infos (dynamisch aktualisiert)
     while true; do
+        # Debug logging
+        if [ -n "${DEBUG:-}" ]; then
+            echo "DEBUG: Entering menu loop" >&2
+            echo "DEBUG: anime_title=$anime_title season=$season episode=$episode" >&2
+            echo "DEBUG: CURRENT_HOSTER_NAME=$CURRENT_HOSTER_NAME" >&2
+        fi
+
         # Baue Prompt dynamisch mit aktuellen Werten und zeige aktuellen Hoster
         local hoster_info=""
         if [ -n "$CURRENT_HOSTER_NAME" ]; then
             hoster_info=" | Hoster: ${CURRENT_HOSTER_NAME}"
         fi
+
         cmd=$(printf "next\nreplay\nprevious\nselect\nhoster\nquit" | select_with_fzf "${anime_title} | S${season}E${episode}/${season_episodes}${hoster_info}")
+
+        if [ -n "${DEBUG:-}" ]; then
+            echo "DEBUG: Menu returned cmd='$cmd'" >&2
+        fi
 
         # Prüfe auf quit
         if [ "$cmd" = "quit" ]; then
@@ -382,6 +398,9 @@ main_loop() {
 
         # Bei leerem cmd (ESC/Abbruch) zurück zum Menü
         if [ -z "$cmd" ]; then
+            if [ -n "${DEBUG:-}" ]; then
+                echo "DEBUG: Empty cmd, continuing" >&2
+            fi
             continue
         fi
         case "$cmd" in
