@@ -7,9 +7,9 @@ search_anime() {
 
     show_loading "Suche nach '${query}'"
 
-    # AJAX-Request an die Search-API
+    # AJAX-Request an die Search-API (mit Compression und Timeout)
     local json
-    json=$(curl -s -X POST \
+    json=$(curl -s --compressed --max-time 10 -X POST \
                 -A "$USER_AGENT" \
                 -H "Content-Type: application/x-www-form-urlencoded" \
                 -d "keyword=${query}" \
@@ -38,24 +38,24 @@ search_anime() {
     fi
 }
 
-# Hole Staffeln für einen Anime
+# Hole Staffeln für einen Anime (mit Compression für schnellere Downloads)
 get_seasons() {
     local slug="$1"
 
     show_loading "Lade Staffeln"
 
     local html
-    html=$(curl -s -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
+    html=$(curl -s --compressed -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
 
     clear_loading
 
-    # Parse Staffeln (Windows-kompatibel mit sed)
+    # Parse Staffeln (Windows-kompatibel mit sed, optimiert)
     echo "$html" | \
         sed -n 's/.*staffel-\([0-9][0-9]*\).*/\1/p' | \
         sort -nu
 }
 
-# Hole Episoden für eine Staffel
+# Hole Episoden für eine Staffel (mit Compression)
 get_episodes() {
     local slug="$1"
     local season="$2"
@@ -63,11 +63,11 @@ get_episodes() {
     show_loading "Lade Episoden"
 
     local html
-    html=$(curl -s -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
+    html=$(curl -s --compressed -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
 
     clear_loading
 
-    # Parse Episoden für die Staffel (Windows-kompatibel mit sed)
+    # Parse Episoden für die Staffel (Windows-kompatibel mit sed, optimiert)
     echo "$html" | \
         sed -n "s/.*staffel-${season}\/episode-\([0-9][0-9]*\).*/\1/p" | \
         sort -nu
@@ -83,7 +83,7 @@ get_hoster_links() {
 
     local url="${BASE_URL}/anime/stream/${slug}/staffel-${season}/episode-${episode}"
     local html
-    html=$(curl -s -A "$USER_AGENT" "$url")
+    html=$(curl -s --compressed -A "$USER_AGENT" "$url")
 
     clear_loading
 
@@ -271,12 +271,12 @@ extract_doodstream_url() {
     fi
 }
 
-# Hole Anime-Titel
+# Hole Anime-Titel (mit Compression)
 get_anime_title() {
     local slug="$1"
 
     local html
-    html=$(curl -s -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
+    html=$(curl -s --compressed -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
 
     # Titel ist in <h1 itemprop="name"><span>TITEL</span></h1> Format
     # Wichtig: Nur das erste <span> innerhalb von <h1>, nicht greedy matchen
@@ -286,21 +286,41 @@ get_anime_title() {
         head -1
 }
 
-# Hole Gesamt-Episodenanzahl über alle Staffeln
+# Hole Gesamt-Episodenanzahl über alle Staffeln (mit Cache)
 get_total_episode_count() {
     local slug="$1"
 
-    local seasons
-    seasons=$(get_seasons "$slug")
+    # Prüfe Cache
+    if [ -f "$EPISODE_COUNT_CACHE" ]; then
+        local cached
+        cached=$(grep "^${slug}|" "$EPISODE_COUNT_CACHE" 2>/dev/null | cut -d'|' -f2)
+        if [ -n "$cached" ]; then
+            echo "$cached"
+            return 0
+        fi
+    fi
 
+    # Hole HTML nur einmal (mit Compression für schnelleren Download)
+    local html
+    html=$(curl -s --compressed -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
+
+    # Extrahiere alle Staffeln aus dem HTML
+    local seasons
+    seasons=$(echo "$html" | sed -n 's/.*staffel-\([0-9][0-9]*\).*/\1/p' | sort -nu)
+
+    # Zähle Episoden pro Staffel
     local total=0
     while read -r season; do
-        local episodes
-        episodes=$(get_episodes "$slug" "$season")
         local count
-        count=$(echo "$episodes" | wc -l)
-        total=$((total + count))
+        count=$(echo "$html" | sed -n "s/.*staffel-${season}\/episode-\([0-9][0-9]*\).*/\1/p" | sort -nu | tail -1)
+        if [ -n "$count" ]; then
+            total=$((total + count))
+        fi
     done <<< "$seasons"
+
+    # Speichere im Cache
+    mkdir -p "$CACHE_DIR"
+    echo "${slug}|${total}" >> "$EPISODE_COUNT_CACHE"
 
     echo "$total"
 }
