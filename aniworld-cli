@@ -294,10 +294,18 @@ main_loop() {
     save_history "$slug" "$season" "$episode"
 
     # Haupt-Loop mit Menü in while-Bedingung (exakt wie ani-cli)
-    # Zeige Menü mit aktuellen Infos
-    while cmd=$(printf "▶ next      - Nächste Episode\n🔁 replay    - Episode wiederholen\n◀ previous  - Vorherige Episode\n📋 select    - Andere Episode wählen\n❌ quit      - Beenden" | select_with_fzf "${anime_title} | S${season}E${episode}/${total_episodes}"); do
+    # Zeige Menü mit aktuellen Infos (dynamisch aktualisiert)
+    while true; do
+        # Baue Prompt dynamisch mit aktuellen Werten
+        cmd=$(printf "▶ next      - Nächste Episode\n🔁 replay    - Episode wiederholen\n◀ previous  - Vorherige Episode\n📋 select    - Andere Episode wählen\n❌ quit      - Beenden" | select_with_fzf "${anime_title} | S${season}E${episode}/${total_episodes}")
+
         # Extrahiere nur den Befehl (erstes Wort nach Emoji)
         cmd=$(echo "$cmd" | awk '{print $2}')
+
+        # Prüfe auf quit/empty
+        if [ "$cmd" = "quit" ] || [ -z "$cmd" ]; then
+            break
+        fi
         case "$cmd" in
             next)
                 # Nächste Episode
@@ -349,9 +357,6 @@ main_loop() {
                 episode=$(select_episode_interactive "$slug" "$season" "")
                 episodes=$(get_episodes "$slug" "$season")
                 total_episodes=$(echo "$episodes" | wc -l)
-                ;;
-            quit|"")
-                break
                 ;;
         esac
 
@@ -449,9 +454,10 @@ main() {
     local slug
     slug=$(select_anime "$search_term")
 
-    # Hole Titel
-    CURRENT_TITLE=$(get_anime_title "$slug")
-    show_info "Gewählt: ${CURRENT_TITLE}"
+    # Hole Titel (ohne Episode-Info hier, wird später in main_loop gesetzt)
+    local anime_title
+    anime_title=$(get_anime_title "$slug")
+    show_info "Gewählt: ${anime_title}"
 
     # Prüfe History und zeige fzf-Menü (wie ani-cli)
     local continue_season=""
