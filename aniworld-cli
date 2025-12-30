@@ -297,10 +297,7 @@ main_loop() {
     # Zeige Menü mit aktuellen Infos (dynamisch aktualisiert)
     while true; do
         # Baue Prompt dynamisch mit aktuellen Werten
-        cmd=$(printf "▶ next      - Nächste Episode\n🔁 replay    - Episode wiederholen\n◀ previous  - Vorherige Episode\n📋 select    - Andere Episode wählen\n❌ quit      - Beenden" | select_with_fzf "${anime_title} | S${season}E${episode}/${total_episodes}")
-
-        # Extrahiere nur den Befehl (erstes Wort nach Emoji)
-        cmd=$(echo "$cmd" | awk '{print $2}')
+        cmd=$(printf "next\nreplay\nprevious\nselect\nquit" | select_with_fzf "${anime_title} | S${season}E${episode}/${total_episodes}")
 
         # Prüfe auf quit/empty
         if [ "$cmd" = "quit" ] || [ -z "$cmd" ]; then
