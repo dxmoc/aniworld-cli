@@ -49,9 +49,9 @@ get_seasons() {
 
     clear_loading
 
-    # Parse Staffeln
+    # Parse Staffeln (Windows-kompatibel mit sed)
     echo "$html" | \
-        grep -oP 'staffel-\K[0-9]+' | \
+        sed -n 's/.*staffel-\([0-9][0-9]*\).*/\1/p' | \
         sort -nu
 }
 
@@ -67,9 +67,9 @@ get_episodes() {
 
     clear_loading
 
-    # Parse Episoden für die Staffel
+    # Parse Episoden für die Staffel (Windows-kompatibel mit sed)
     echo "$html" | \
-        grep -oP "staffel-${season}/episode-\K[0-9]+" | \
+        sed -n "s/.*staffel-${season}\/episode-\([0-9][0-9]*\).*/\1/p" | \
         sort -nu
 }
 
@@ -87,21 +87,52 @@ get_hoster_links() {
 
     clear_loading
 
+    # Debug: Speichere HTML für Fehleranalyse (optional)
+    if [ -n "${DEBUG:-}" ]; then
+        echo "$html" > "${DATA_DIR}/debug_episode.html"
+        show_info "Debug: HTML gespeichert in ${DATA_DIR}/debug_episode.html"
+    fi
+
     # Parse Redirect-IDs und Hoster-Namen
     # Format: redirect_id|hoster_name
-    # Extrahiere aus: <i class="icon HOSTER_NAME" ...> oder <h4>HOSTER_NAME</h4>
+    # Windows-kompatible Version ohne grep -oP (funktioniert mit Git Bash)
+
+    # Extrahiere alle redirect IDs und Hoster-Namen
     echo "$html" | \
         tr '\n' ' ' | \
-        grep -oP '<li[^>]*data-link-target="/redirect/[0-9]+"[^>]*>.*?</li>' | \
-        while read -r li_block; do
-            redirect_id=$(echo "$li_block" | grep -oP 'data-link-target="/redirect/\K[0-9]+')
-            # Versuche Hoster-Name aus <i class="icon HOSTER">
-            hoster=$(echo "$li_block" | grep -oP '<i class="icon \K[^"]+' | head -1)
-            # Falls nicht gefunden, versuche aus <h4>
+        sed 's/<li/\n<li/g' | \
+        grep 'data-link-target="/redirect/' | \
+        while read -r line; do
+            # Extrahiere redirect_id mit sed (POSIX-kompatibel)
+            redirect_id=$(echo "$line" | sed -n 's/.*data-link-target="\/redirect\/\([0-9]*\)".*/\1/p')
+
+            # Extrahiere Hoster-Name aus verschiedenen Patterns
+            # Pattern 1: <i class="icon HOSTER">
+            hoster=$(echo "$line" | sed -n 's/.*<i class="icon \([^"]*\)".*/\1/p' | head -1)
+
+            # Pattern 2: <h4>HOSTER</h4>
             if [ -z "$hoster" ]; then
-                hoster=$(echo "$li_block" | grep -oP '<h4>\K[^<]+' | head -1)
+                hoster=$(echo "$line" | sed -n 's/.*<h4>\([^<]*\)<\/h4>.*/\1/p' | head -1)
             fi
-            [ -n "$redirect_id" ] && echo "${redirect_id}|${hoster}"
+
+            # Pattern 3: data-lang-key Attribute
+            if [ -z "$hoster" ]; then
+                hoster=$(echo "$line" | sed -n 's/.*data-lang-key="\([^"]*\)".*/\1/p' | head -1)
+            fi
+
+            # Debug output
+            if [ -n "${DEBUG:-}" ]; then
+                echo "DEBUG: redirect_id=$redirect_id hoster=$hoster" >&2
+            fi
+
+            # Nur ausgeben wenn redirect_id vorhanden
+            if [ -n "$redirect_id" ]; then
+                # Wenn kein Hoster-Name gefunden, generischen Namen verwenden
+                if [ -z "$hoster" ]; then
+                    hoster="Hoster_${redirect_id}"
+                fi
+                echo "${redirect_id}|${hoster}"
+            fi
         done
 }
 
@@ -155,17 +186,17 @@ extract_voe_url() {
     local html
     html=$(curl -s -A "$USER_AGENT" "$embed_url")
 
-    # Parse redirect URL from JavaScript
+    # Parse redirect URL from JavaScript (Windows-kompatibel)
     local redirect_url
-    redirect_url=$(echo "$html" | grep -oP "window\.location\.href = '\K[^']+" | head -1)
+    redirect_url=$(echo "$html" | sed -n "s/.*window\.location\.href = '\([^']*\)'.*/\1/p" | head -1)
 
     if [ -n "$redirect_url" ]; then
         html=$(curl -s -A "$USER_AGENT" "$redirect_url")
     fi
 
-    # Suche nach m3u8 oder mp4 URL
+    # Suche nach m3u8 oder mp4 URL (Windows-kompatibel mit sed/grep Fallback)
     local video_url
-    video_url=$(echo "$html" | grep -oP 'https?://[^"'\'']*\.(m3u8|mp4)(\?[^"'\'']*)?' | grep -v "test-videos" | head -1)
+    video_url=$(echo "$html" | grep -o 'https\?://[^"'\'']*\.\(m3u8\|mp4\)[^"'\'']*' | grep -v "test-videos" | head -1)
 
     if [ -n "$video_url" ]; then
         echo "$video_url"
@@ -182,13 +213,13 @@ extract_vidmoly_url() {
     local html
     html=$(curl -s -A "$USER_AGENT" "$embed_url")
 
-    # Vidmoly verwendet oft "sources" in JavaScript
+    # Vidmoly verwendet oft "sources" in JavaScript (Windows-kompatibel)
     local video_url
-    video_url=$(echo "$html" | grep -oP '(sources:|file:)\s*["\x27]\K(https?://[^"'\'']+\.(m3u8|mp4)[^"'\'']*)' | head -1)
+    video_url=$(echo "$html" | sed -n 's/.*\(sources\|file\):\s*["\x27]\(https\?:\/\/[^"'\'']*\.\(m3u8\|mp4\)[^"'\'']*\).*/\2/p' | head -1)
 
     # Fallback: Generisches Pattern
     if [ -z "$video_url" ]; then
-        video_url=$(echo "$html" | grep -oP 'https?://[^"'\'']*\.(m3u8|mp4)(\?[^"'\'']*)?' | head -1)
+        video_url=$(echo "$html" | grep -o 'https\?://[^"'\'']*\.\(m3u8\|mp4\)[^"'\'']*' | head -1)
     fi
 
     if [ -n "$video_url" ]; then
@@ -205,9 +236,9 @@ extract_streamtape_url() {
     local html
     html=$(curl -s -A "$USER_AGENT" "$embed_url")
 
-    # Streamtape verschleiert die URL, suche nach typischen Patterns
+    # Streamtape verschleiert die URL, suche nach typischen Patterns (Windows-kompatibel)
     local video_url
-    video_url=$(echo "$html" | grep -oP "document\.getElementById\('videolink'\)\.innerHTML = '//[^']+" | grep -oP "//\K[^']+")
+    video_url=$(echo "$html" | sed -n "s/.*document\.getElementById('videolink')\.innerHTML = '\/\/\([^']*\)'.*/\1/p" | head -1)
 
     if [ -n "$video_url" ]; then
         echo "https://${video_url}"
@@ -247,9 +278,10 @@ get_anime_title() {
     local html
     html=$(curl -s -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
 
-    # Titel ist in <h1><span>TITEL</span></h1> Format
+    # Titel ist in <h1><span>TITEL</span></h1> Format (Windows-kompatibel)
     echo "$html" | \
-        grep -oP '<h1[^>]*>.*?<span>\K[^<]+' | \
+        tr '\n' ' ' | \
+        sed -n 's/.*<h1[^>]*>.*<span>\([^<]*\)<\/span>.*/\1/p' | \
         head -1
 }
 

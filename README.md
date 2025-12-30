@@ -199,6 +199,29 @@ export LANG=de_DE.UTF-8
 export LC_ALL=de_DE.UTF-8
 ```
 
+**Problem: "Keine Hoster gefunden"**
+
+Wenn du diesen Fehler siehst, wurde die Hoster-Extraktion verbessert für Windows-Kompatibilität:
+
+1. **Mit Debug-Modus starten:**
+   ```bash
+   aniworld-cli --debug "Anime Name"
+   ```
+
+2. **HTML-Datei prüfen:**
+   Die Debug-Datei wird gespeichert unter:
+   ```
+   ~/.local/share/aniworld-cli/debug_episode.html
+   ```
+
+3. **GitHub Issue öffnen:**
+   Falls das Problem weiterhin besteht, öffne ein Issue auf GitHub mit:
+   - Deinem Betriebssystem (Windows/macOS/Linux)
+   - Der debug_episode.html Datei
+   - Der genauen Fehlermeldung
+
+**Windows-spezifisch:** Das Tool wurde für Windows Git Bash optimiert. Alle `grep -oP` Befehle wurden durch POSIX-kompatible `sed` Alternativen ersetzt.
+
 ## Verwendung
 
 ### Interaktiver Modus (Empfohlen)
@@ -245,6 +268,20 @@ Nach jeder Episode erscheint automatisch ein fzf-Menü:
   select    - Andere Episode wählen
   quit      - Beenden
 ```
+
+### Debug-Modus
+
+Bei Problemen (z.B. "Keine Hoster gefunden") starte mit Debug-Modus:
+```bash
+aniworld-cli --debug "Anime Name"
+# oder
+aniworld-cli -d "Anime Name"
+```
+
+Der Debug-Modus:
+- Zeigt detaillierte Shell-Ausgaben
+- Speichert HTML-Dateien in `~/.local/share/aniworld-cli/debug_episode.html`
+- Gibt Hoster-Extraktions-Details aus
 
 ### Hilfe anzeigen
 

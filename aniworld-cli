@@ -71,15 +71,26 @@ OPTIONS:
     -h, --help          Zeige diese Hilfe
     -v, --version       Zeige Version
     -c, --continue      Setze letzten Anime fort
-    --debug             Debug-Modus
+    -d, --debug         Debug-Modus (speichert HTML für Fehleranalyse)
 
 BEISPIELE:
     aniworld-cli "One Piece"
     aniworld-cli --continue
+    aniworld-cli --debug "Naruto"
     aniworld-cli -h
+
+DEBUG:
+    Bei Problemen mit der Hoster-Suche (z.B. "Keine Hoster gefunden"):
+    1. Mit --debug starten: aniworld-cli --debug "Anime Name"
+    2. HTML-Datei wird gespeichert in: ~/.local/share/aniworld-cli/debug_episode.html
+    3. Debug-Ausgaben werden in der Konsole angezeigt
 
 DEPENDENCIES:
     curl, grep, sed, fzf, mpv (oder vlc)
+
+WINDOWS:
+    Verwende Git Bash (nicht PowerShell oder CMD)
+    Bei Hoster-Problemen: Starte mit --debug und öffne ein GitHub Issue
 EOF
 }
 
@@ -360,7 +371,8 @@ main() {
                 continue_mode=true
                 shift
                 ;;
-            --debug)
+            -d|--debug)
+                export DEBUG=1
                 set -x
                 shift
                 ;;
