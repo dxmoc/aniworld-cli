@@ -27,8 +27,16 @@ select_with_fzf() {
     local input
     input=$(cat)
 
-    # Einfache Version für Windows-Kompatibilität
-    echo "$input" | fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse
+    # Windows-Fix: Verwende temporäre Datei statt Pipe (Pipes sind auf Git Bash instabil)
+    local tmpfile=$(mktemp)
+    echo "$input" > "$tmpfile"
+
+    # fzf liest von Datei, nicht von Pipe - stabiler auf Windows
+    fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse < "$tmpfile"
+    local exit_code=$?
+
+    rm -f "$tmpfile"
+    return $exit_code
 }
 
 # Zeige Fehler
