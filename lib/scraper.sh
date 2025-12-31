@@ -1,6 +1,29 @@
 #!/usr/bin/env bash
 # scraper.sh - Web Scraping Functions
 
+# Session Cache für HTML-Seiten (reduziert HTTP-Requests)
+declare -A HTML_CACHE
+
+# Hole HTML mit Cache
+get_anime_html() {
+    local slug="$1"
+
+    # Prüfe Cache
+    if [ -n "${HTML_CACHE[$slug]:-}" ]; then
+        echo "${HTML_CACHE[$slug]}"
+        return 0
+    fi
+
+    # Lade HTML
+    local html
+    html=$(curl -s --compressed -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
+
+    # Speichere im Cache
+    HTML_CACHE[$slug]="$html"
+
+    echo "$html"
+}
+
 # Suche nach Anime
 search_anime() {
     local query="$1"
@@ -38,14 +61,14 @@ search_anime() {
     fi
 }
 
-# Hole Staffeln für einen Anime (mit Compression für schnellere Downloads)
+# Hole Staffeln für einen Anime (gecached)
 get_seasons() {
     local slug="$1"
 
     show_loading "Lade Staffeln"
 
     local html
-    html=$(curl -s --compressed -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
+    html=$(get_anime_html "$slug")
 
     clear_loading
 
@@ -55,7 +78,7 @@ get_seasons() {
         sort -nu
 }
 
-# Hole Episoden für eine Staffel (mit Compression)
+# Hole Episoden für eine Staffel (gecached)
 get_episodes() {
     local slug="$1"
     local season="$2"
@@ -63,7 +86,7 @@ get_episodes() {
     show_loading "Lade Episoden"
 
     local html
-    html=$(curl -s --compressed -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
+    html=$(get_anime_html "$slug")
 
     clear_loading
 
@@ -327,12 +350,12 @@ extract_filemoon_url() {
     fi
 }
 
-# Hole Anime-Titel (mit Compression)
+# Hole Anime-Titel (gecached)
 get_anime_title() {
     local slug="$1"
 
     local html
-    html=$(curl -s --compressed -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
+    html=$(get_anime_html "$slug")
 
     # Titel ist in <h1 itemprop="name"><span>TITEL</span></h1> Format
     # Wichtig: Nur das erste <span> innerhalb von <h1>, nicht greedy matchen
@@ -356,9 +379,9 @@ get_total_episode_count() {
         fi
     fi
 
-    # Hole HTML nur einmal (mit Compression für schnelleren Download)
+    # Hole HTML aus Cache
     local html
-    html=$(curl -s --compressed -A "$USER_AGENT" "${BASE_URL}/anime/stream/${slug}")
+    html=$(get_anime_html "$slug")
 
     # Extrahiere alle Staffeln aus dem HTML
     local seasons
