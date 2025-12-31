@@ -32,26 +32,40 @@ select_with_fzf() {
     echo "$input" > "$tmpfile"
 
     # fzf liest von Datei, nicht von Pipe - stabiler auf Windows
-    fzf --prompt="${prompt}: " --reverse --cycle --ansi --no-mouse < "$tmpfile"
+    fzf --prompt="${prompt}: " \
+        --reverse \
+        --cycle \
+        --ansi \
+        --no-mouse \
+        --height=100% \
+        --border=rounded \
+        --margin=1 \
+        --info=inline < "$tmpfile"
     local exit_code=$?
 
     rm -f "$tmpfile"
     return $exit_code
 }
 
-# Zeige Fehler
+# Zeige Fehler (nur im Debug-Modus)
 show_error() {
-    echo -e "${RED}ERROR: $1${RESET}" >&2
+    if [ -n "${DEBUG:-}" ]; then
+        echo -e "${RED}ERROR: $1${RESET}" >&2
+    fi
 }
 
-# Zeige Info
+# Zeige Info (nur im Debug-Modus)
 show_info() {
-    echo -e "${GREEN}INFO: $1${RESET}" >&2
+    if [ -n "${DEBUG:-}" ]; then
+        echo -e "${GREEN}INFO: $1${RESET}" >&2
+    fi
 }
 
-# Zeige Warnung
+# Zeige Warnung (nur im Debug-Modus)
 show_warning() {
-    echo -e "${YELLOW}WARNING: $1${RESET}" >&2
+    if [ -n "${DEBUG:-}" ]; then
+        echo -e "${YELLOW}WARNING: $1${RESET}" >&2
+    fi
 }
 
 # Episode-Menü nach Playback (fzf-basiert wie ani-cli)
