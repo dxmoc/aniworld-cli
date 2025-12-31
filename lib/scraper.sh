@@ -199,10 +199,10 @@ extract_video_url() {
         video_url=$(extract_vidmoly_url "$embed_url")
     elif [[ "$embed_url" == *"doodstream"* ]] || [[ "$embed_url" == *"dood"* ]]; then
         video_url=$(extract_doodstream_url "$embed_url")
-    elif [[ "$embed_url" == *"voe.sx"* ]]; then
+    elif [[ "$embed_url" == *"voe.sx"* ]] || [[ "$embed_url" == *"voe"* ]]; then
         video_url=$(extract_voe_url "$embed_url")
     elif [[ "$embed_url" == *"filemoon"* ]]; then
-        video_url="$embed_url"  # Filemoon direkt probieren
+        video_url=$(extract_filemoon_url "$embed_url")
     else
         # Fallback: Versuche Embed-URL direkt
         video_url="$embed_url"
@@ -301,6 +301,37 @@ extract_doodstream_url() {
         echo "$video_url"
     else
         # Fallback: Embed-URL
+        echo "$embed_url"
+    fi
+}
+
+# Extrahiere Filemoon Video-URL
+extract_filemoon_url() {
+    local embed_url="$1"
+
+    local html
+    html=$(curl -s -A "$USER_AGENT" "$embed_url")
+
+    # Filemoon verwendet verschiedene Patterns für Video-URLs
+    local video_url
+
+    # Pattern 1: Suche nach m3u8 oder mp4 URLs im JavaScript
+    video_url=$(echo "$html" | grep -o 'https\?://[^"'\'']*\.\(m3u8\|mp4\)[^"'\'']*' | head -1)
+
+    # Pattern 2: Suche nach "file:" oder "sources:" in JavaScript
+    if [ -z "$video_url" ]; then
+        video_url=$(echo "$html" | sed -n 's/.*\(file\|sources\):\s*["\x27]\(https\?:\/\/[^"'\'']*\.\(m3u8\|mp4\)[^"'\'']*\).*/\2/p' | head -1)
+    fi
+
+    # Pattern 3: Suche nach eval() entschlüsseltem Code (manchmal verwendet Filemoon Obfuscation)
+    if [ -z "$video_url" ]; then
+        video_url=$(echo "$html" | grep -oP 'https?://[^"'\''[:space:]]+filemoon[^"'\''[:space:]]+\.(m3u8|mp4)' | head -1)
+    fi
+
+    if [ -n "$video_url" ]; then
+        echo "$video_url"
+    else
+        # Fallback: Embed-URL (mpv mit yt-dlp könnte es schaffen)
         echo "$embed_url"
     fi
 }
