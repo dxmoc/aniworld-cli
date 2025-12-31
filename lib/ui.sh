@@ -31,6 +31,9 @@ select_with_fzf() {
     local tmpfile=$(mktemp)
     echo "$input" > "$tmpfile"
 
+    # Lösche vorherige Ausgaben (Info-Zeilen)
+    clear
+
     # fzf liest von Datei, nicht von Pipe - stabiler auf Windows
     fzf --prompt="${prompt}: " \
         --reverse \
