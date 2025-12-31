@@ -239,13 +239,31 @@ select_and_save_hoster() {
 
     # Automatische Auswahl (wenn nicht force_selection)
     if [ "$force_selection" = "false" ]; then
-        # Hoster-Präferenz: Streamtape > Vidmoly > Doodstream > VOE
-        for hoster_name in "streamtape" "vidmoly" "doodstream" "voe"; do
-            selected_line=$(echo "$hosters" | grep -i "$hoster_name" | head -1)
-            if [ -n "$selected_line" ]; then
-                break
-            fi
-        done
+        # Sortiere nach Qualität (1080p > 720p > 480p > HD > N/A)
+        # und dann nach Hoster-Präferenz (Filemoon > Streamtape > Vidmoly > Doodstream > VOE)
+        selected_line=$(echo "$hosters" | awk -F'|' '
+            function quality_score(qual) {
+                if (qual == "1080p") return 5
+                if (qual == "720p") return 4
+                if (qual == "480p") return 3
+                if (qual == "HD") return 2
+                return 1
+            }
+            function hoster_score(hoster) {
+                if (tolower(hoster) ~ /filemoon/) return 50
+                if (tolower(hoster) ~ /streamtape/) return 40
+                if (tolower(hoster) ~ /vidmoly/) return 30
+                if (tolower(hoster) ~ /doodstream/) return 20
+                if (tolower(hoster) ~ /voe/) return 10
+                return 5
+            }
+            {
+                qual_score = quality_score($4)
+                host_score = hoster_score($2)
+                total = (qual_score * 100) + host_score
+                print total "|" $0
+            }
+        ' | sort -t'|' -k1 -nr | head -1 | cut -d'|' -f2-)
     fi
 
     # Manuelle Auswahl oder kein bevorzugter Hoster gefunden
@@ -304,7 +322,7 @@ play_episode() {
 
     # Hole Hoster
     local hoster_id
-    hoster_id=$(select_hoster_interactive "$slug" "$season" "$episode")
+    hoster_id=$(select_and_save_hoster "$slug" "$season" "$episode" "false")
 
     if [ -z "$hoster_id" ]; then
         return 1
