@@ -64,6 +64,42 @@ scoop install fzf mpv yt-dlp nodejs aria2 jq
 
 ## Installation
 
+### Package Manager Installation (Empfohlen)
+
+aniworld-cli kann über verschiedene Package Manager installiert werden.
+
+**→ Für detaillierte Installationsanleitungen siehe [INSTALLATION.md](INSTALLATION.md)**
+
+#### Arch Linux (AUR)
+
+```bash
+# Mit yay
+yay -S aniworld-cli
+
+# Oder development version
+yay -S aniworld-cli-git
+```
+
+#### Windows (Scoop)
+
+```bash
+# Füge das aniworld-cli bucket hinzu
+scoop bucket add aniworld https://github.com/dxmoc/aniworld-cli.git
+
+# Installiere aniworld-cli
+scoop install aniworld/aniworld-cli
+```
+
+#### macOS/Linux (Homebrew)
+
+```bash
+# Füge das Tap hinzu
+brew tap dxmoc/aniworld-cli https://github.com/dxmoc/aniworld-cli.git
+
+# Installiere aniworld-cli
+brew install aniworld-cli
+```
+
 ### Linux/macOS - Schnelle Installation
 
 ```bash

@@ -1,0 +1,29 @@
+# Maintainer: Your Name <your.email@example.com>
+pkgname=aniworld-cli
+pkgver=1.0.0
+pkgrel=1
+pkgdesc='CLI tool to browse and watch anime from aniworld.to'
+arch=('any')
+url='https://github.com/dxmoc/aniworld-cli'
+license=('GPL')
+depends=('bash' 'curl' 'sed' 'grep' 'fzf' 'nodejs')
+optdepends=(
+    'mpv: video playback (recommended)'
+    'vlc: alternative video player'
+    'yt-dlp: enhanced video extraction'
+    'aria2: download support'
+)
+source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+    cd "${srcdir}/${pkgname}-${pkgver}"
+
+    install -Dm755 aniworld-cli "${pkgdir}/usr/bin/aniworld-cli"
+
+    install -dm755 "${pkgdir}/usr/share/${pkgname}/lib"
+    install -Dm644 lib/*.sh "${pkgdir}/usr/share/${pkgname}/lib/"
+    install -Dm644 lib/*.js "${pkgdir}/usr/share/${pkgname}/lib/"
+
+    install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}

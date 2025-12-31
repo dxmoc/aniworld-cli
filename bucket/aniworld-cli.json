@@ -1,0 +1,31 @@
+{
+    "version": "1.0.0",
+    "description": "CLI tool to browse and watch anime from aniworld.to",
+    "homepage": "https://github.com/dxmoc/aniworld-cli",
+    "license": "GPL-3.0",
+    "url": "https://github.com/dxmoc/aniworld-cli/archive/refs/heads/main.zip",
+    "hash": "",
+    "extract_dir": "aniworld-cli-main",
+    "bin": "aniworld-cli",
+    "depends": [
+        "fzf",
+        "nodejs"
+    ],
+    "suggest": {
+        "mpv": "mpv",
+        "yt-dlp": "yt-dlp",
+        "ffmpeg": "ffmpeg",
+        "aria2": "aria2"
+    },
+    "checkver": {
+        "github": "https://github.com/dxmoc/aniworld-cli"
+    },
+    "autoupdate": {
+        "url": "https://github.com/dxmoc/aniworld-cli/archive/refs/heads/main.zip"
+    },
+    "notes": [
+        "aniworld-cli requires mpv or vlc for video playback.",
+        "Install recommended dependencies with: scoop install mpv yt-dlp ffmpeg aria2",
+        "For best experience, use with Git Bash in Windows Terminal."
+    ]
+}
