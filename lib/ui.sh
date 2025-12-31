@@ -31,13 +31,7 @@ select_with_fzf() {
     local tmpfile=$(mktemp)
     echo "$input" > "$tmpfile"
 
-    # Stelle stdout/stderr für fzf wieder her (falls unterdrückt)
-    if [ -z "${DEBUG:-}" ] && [ -e /proc/$$/fd/3 ] 2>/dev/null; then
-        exec 1>&3 2>&4
-    fi
-
     # fzf liest von Datei, nicht von Pipe - stabiler auf Windows
-    # --clear sorgt dafür, dass fzf das Terminal selbst managed
     fzf --prompt="${prompt}: " \
         --reverse \
         --cycle \
@@ -46,14 +40,8 @@ select_with_fzf() {
         --height=100% \
         --border=rounded \
         --margin=1 \
-        --info=inline \
-        --clear < "$tmpfile"
+        --info=inline < "$tmpfile"
     local exit_code=$?
-
-    # Unterdrücke Ausgaben wieder nach fzf
-    if [ -z "${DEBUG:-}" ] && [ -e /proc/$$/fd/3 ] 2>/dev/null; then
-        exec 1>/dev/null 2>&1
-    fi
 
     rm -f "$tmpfile"
     return $exit_code

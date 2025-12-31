@@ -364,11 +364,6 @@ main_loop() {
     local season="$2"
     local episode="$3"
 
-    # Unterdrücke alle Ausgaben außer im Debug-Modus
-    if [ -z "${DEBUG:-}" ]; then
-        exec 3>&1 4>&2 1>/dev/null 2>&1
-    fi
-
     # Hole Anime-Titel einmal (bleibt konstant)
     local anime_title
     anime_title=$(get_anime_title "$slug")
