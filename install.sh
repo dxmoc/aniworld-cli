@@ -68,6 +68,11 @@ check_dependencies() {
         missing+=("yt-dlp")
     fi
 
+    # Check for Node.js (required for Filemoon hoster)
+    if ! command -v node &>/dev/null; then
+        missing+=("nodejs")
+    fi
+
     echo "${missing[@]}"
 }
 
@@ -177,11 +182,13 @@ install_dependencies() {
                 return 1
             fi
             echo -e "${BLUE}Installing dependencies with brew...${RESET}"
-            # macOS needs gnu-sed instead of sed
+            # macOS needs gnu-sed instead of sed, and node instead of nodejs
             local mac_deps=()
             for dep in "${deps[@]}"; do
                 if [ "$dep" = "sed" ]; then
                     mac_deps+=("gnu-sed")
+                elif [ "$dep" = "nodejs" ]; then
+                    mac_deps+=("node")
                 else
                     mac_deps+=("$dep")
                 fi

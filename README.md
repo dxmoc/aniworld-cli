@@ -29,34 +29,37 @@ Folgende Tools müssen installiert sein:
 - `fzf` - Interaktive Auswahl
 - `mpv` oder `vlc` - Video-Player
 - `yt-dlp` oder `youtube-dl` - **Empfohlen** für Video-URL-Extraktion
+- `node` (Node.js) - **Erforderlich** für Filemoon-Hoster-Unterstützung
 - `jq` - **Optional** für besseres JSON-Parsing
+
+**Wichtig:** Node.js wird für den Filemoon-Hoster benötigt, da dieser seine Video-URLs mit obfusziertem JavaScript verschleiert. Ohne Node.js funktioniert Filemoon nicht.
 
 ### Installation der Dependencies
 
 **Ubuntu/Debian:**
 ```bash
-sudo apt install curl grep sed fzf mpv yt-dlp jq
+sudo apt install curl grep sed fzf mpv yt-dlp nodejs jq
 ```
 
 **Arch Linux:**
 ```bash
-sudo pacman -S curl grep sed fzf mpv yt-dlp jq
+sudo pacman -S curl grep sed fzf mpv yt-dlp nodejs jq
 ```
 
 **Fedora:**
 ```bash
-sudo dnf install curl grep sed fzf mpv yt-dlp jq
+sudo dnf install curl grep sed fzf mpv yt-dlp nodejs jq
 ```
 
 **macOS:**
 ```bash
-brew install curl grep gnu-sed fzf mpv yt-dlp jq
+brew install curl grep gnu-sed fzf mpv yt-dlp node jq
 ```
 
 **Windows:**
 ```bash
 # In Git Bash (siehe Windows Installation Sektion)
-scoop install fzf mpv yt-dlp aria2 jq
+scoop install fzf mpv yt-dlp nodejs aria2 jq
 ```
 
 ## Installation
@@ -88,13 +91,13 @@ Falls du das Install-Script nicht verwenden möchtest:
 1. Dependencies installieren:
 ```bash
 # Ubuntu/Debian
-sudo apt install curl grep sed fzf mpv yt-dlp jq
+sudo apt install curl grep sed fzf mpv yt-dlp nodejs jq
 
 # Arch Linux
-sudo pacman -S curl grep sed fzf mpv yt-dlp jq
+sudo pacman -S curl grep sed fzf mpv yt-dlp nodejs jq
 
 # Fedora
-sudo dnf install curl grep sed fzf mpv yt-dlp jq
+sudo dnf install curl grep sed fzf mpv yt-dlp nodejs jq
 ```
 
 2. Symlink erstellen:
@@ -147,7 +150,7 @@ Git Bash als Windows Terminal Profil einrichten:
 **1. Dependencies installieren:**
 ```bash
 scoop bucket add extras
-scoop install fzf mpv yt-dlp aria2 jq
+scoop install fzf mpv yt-dlp nodejs aria2 jq
 ```
 
 **2. aniworld-cli installieren:**
@@ -192,6 +195,7 @@ scoop install mpv
 **Problem: Videos starten nicht**
 - Stelle sicher, dass yt-dlp installiert ist: `scoop install yt-dlp`
 - Prüfe mpv Installation: `mpv --version`
+- Für Filemoon-Hoster: Node.js installieren: `scoop install nodejs`
 
 **Problem: Encoding-Fehler bei deutschen Umlauten**
 ```bash
@@ -297,6 +301,7 @@ aniworld-cli wählt automatisch den besten verfügbaren Hoster basierend auf fol
 2. **Vidmoly** - Gute Alternative mit hoher Verfügbarkeit
 3. **Doodstream** - Fallback-Option
 4. **VOE** - Letzte Alternative
+5. **Filemoon** - Funktioniert nur mit Node.js (dekodiert obfuszierten JavaScript-Code)
 
 #### Manueller Hoster-Wechsel
 
@@ -366,7 +371,8 @@ aniworld-cli/
 │   ├── scraper.sh        # Web-Scraping-Funktionen (AJAX API, Hoster-Extraktion)
 │   ├── player.sh         # Video-Player-Integration (mpv/vlc)
 │   ├── history.sh        # Watch-History-Management
-│   └── ui.sh             # UI/UX-Funktionen (fzf-Vollbild-Menüs)
+│   ├── ui.sh             # UI/UX-Funktionen (fzf-Vollbild-Menüs)
+│   └── extract_filemoon.js  # Filemoon Video-URL Dekoder (Node.js)
 ├── install.sh            # Installations-Script
 ├── uninstall.sh          # Deinstallations-Script
 ├── LICENSE               # MIT License
@@ -414,6 +420,11 @@ naruto|2|15|2025-12-30T14:20:00+01:00
 - Der gewählte Hoster ist möglicherweise offline
 - Versuche einen anderen Hoster manuell auszuwählen
 - Manche Hoster benötigen spezielle Parsing-Logik
+- **Filemoon-Hoster**: Stelle sicher, dass Node.js installiert ist (`node --version`)
+  - Ubuntu/Debian: `sudo apt install nodejs`
+  - Arch: `sudo pacman -S nodejs`
+  - macOS: `brew install node`
+  - Windows: `scoop install nodejs`
 
 ### Player startet nicht
 
