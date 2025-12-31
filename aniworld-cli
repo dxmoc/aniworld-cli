@@ -399,7 +399,7 @@ main_loop() {
     # Windows-Fix: Warte, bis Background-Prozess abgeschlossen ist
     # Dann ist mpv gestartet und stört fzf nicht mehr
     wait "$bg_pid" 2>/dev/null || true
-    sleep 0.5
+    sleep 0.1
 
     # Haupt-Loop mit Menü in while-Bedingung (exakt wie ani-cli)
     # Zeige Menü mit aktuellen Infos (dynamisch aktualisiert)
@@ -408,7 +408,7 @@ main_loop() {
         # Windows-Fix: Warte auf vorherigen Background-Prozess
         if [ -n "$prev_bg_pid" ]; then
             wait "$prev_bg_pid" 2>/dev/null || true
-            sleep 0.5
+            sleep 0.1
         fi
         prev_bg_pid=""
 
@@ -619,7 +619,7 @@ main() {
 
     # Interaktiver Modus (wie ani-cli)
     if [ -z "$search_term" ]; then
-        show_info "Checking dependencies..."
+        clear
         echo -ne "${BLUE}Search anime: ${RESET}"
         read -r search_term
 
