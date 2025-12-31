@@ -309,25 +309,20 @@ extract_doodstream_url() {
 extract_filemoon_url() {
     local embed_url="$1"
 
-    local html
-    html=$(curl -s -A "$USER_AGENT" -H "Referer: https://aniworld.to/" "$embed_url")
+    # Filemoon verschleiert die Video-URL mit obfusziertem JavaScript
+    # Verwende Node.js-Extractor, um die tatsächliche Video-URL zu dekodieren
+    if command -v node &>/dev/null; then
+        local video_url
+        video_url=$(node "${LIB_DIR}/extract_filemoon.js" "$embed_url" 2>/dev/null)
 
-    # Filemoon verwendet ein iframe für das Video - extrahiere iframe src
-    local iframe_url
-    iframe_url=$(echo "$html" | grep -o '<iframe[^>]*src="[^"]*"' | sed -n 's/.*src="\([^"]*\)".*/\1/p' | head -1)
-
-    if [ -n "$iframe_url" ]; then
-        # Stelle sicher, dass die URL vollständig ist
-        if [[ "$iframe_url" == //* ]]; then
-            iframe_url="https:${iframe_url}"
-        elif [[ "$iframe_url" != http* ]]; then
-            iframe_url="https://filemoon.to${iframe_url}"
+        if [ -n "$video_url" ]; then
+            echo "$video_url"
+        else
+            # Fallback: Embed-URL (mpv wird es versuchen)
+            echo "$embed_url"
         fi
-
-        # Gib iframe-URL zurück - mpv mit yt-dlp kann diese verarbeiten
-        echo "$iframe_url"
     else
-        # Fallback: Haupt-Embed-URL
+        # Node.js nicht verfügbar - Fallback
         echo "$embed_url"
     fi
 }
