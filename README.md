@@ -12,7 +12,7 @@ Inspiriert von [ani-cli](https://github.com/pystardust/ani-cli), aber speziell f
 - 📜 **Watch History**: Speichere deinen Fortschritt und setze dort fort, wo du aufgehört hast
 - 🎬 **Continue-Menü**: Elegantes fzf-Menü statt Y/n-Abfrage
 - 🎮 **Post-Episode-Menü**: Wähle nach jeder Episode: next, replay, previous, select, hoster, quit
-- 🌐 **Intelligente Hoster-Auswahl**: Automatische Auswahl (Streamtape → Vidmoly → Doodstream → VOE)
+- 🌐 **Intelligente Auswahl**: Automatisch beste Sprache (GerDub), Qualität (1080p) und Hoster (Filemoon)
 - 🔄 **Manuelle Hoster-Wechsel**: Wechsle zwischen Streaming-Anbietern während der Wiedergabe
 - 🎥 **mpv/vlc Integration**: Nahtlose Video-Player-Integration mit yt-dlp Support
 - 🚀 **Binge-Watch-Modus**: Fließend durch Episoden navigieren
@@ -294,14 +294,35 @@ Der Debug-Modus:
 - Speichert HTML-Dateien in `~/.local/share/aniworld-cli/debug_episode.html`
 - Gibt Hoster-Extraktions-Details aus
 
-### Hoster-Auswahl
+### Automatische Hoster/Sprach/Qualitäts-Auswahl
 
-aniworld-cli wählt automatisch den besten verfügbaren Hoster basierend auf folgender Priorität:
-1. **Streamtape** - Meistens die beste Qualität und Zuverlässigkeit
-2. **Vidmoly** - Gute Alternative mit hoher Verfügbarkeit
-3. **Doodstream** - Fallback-Option
-4. **VOE** - Letzte Alternative
-5. **Filemoon** - Funktioniert nur mit Node.js (dekodiert obfuszierten JavaScript-Code)
+aniworld-cli wählt automatisch den besten verfügbaren Stream basierend auf dieser **intelligenten Priorisierung**:
+
+#### 1. Sprache (Höchste Priorität)
+- **GerDub** (Deutsche Synchronisation) - Wird IMMER bevorzugt
+- **GerSub** (Deutsche Untertitel)
+- **EngSub** (Englische Untertitel)
+
+#### 2. Qualität (Zweite Priorität)
+- **1080p** - Beste Qualität
+- **720p** - High Definition
+- **480p** - Standard Definition
+- **HD** - Allgemeine HD-Kennzeichnung
+
+#### 3. Hoster (Niedrigste Priorität)
+- **Filemoon** - Zuverlässig, benötigt Node.js
+- **Streamtape** - Gute Stabilität
+- **Vidmoly** - Solide Alternative
+- **Doodstream** - Fallback-Option
+- **VOE** - Letzte Alternative
+
+**Beispiel:** GerDub 480p wird automatisch über EngSub 1080p gewählt, da deutsche Synchronisation höchste Priorität hat.
+
+**Optimierungen:**
+- **150MB Cache** für unterbrechungsfreies Streaming
+- **30 Sekunden Readahead** verhindert Buffering
+- **10 Sekunden Initial-Puffer** für sofortigen Start
+- **HLS max bitrate** erzwingt beste Qualität
 
 #### Manueller Hoster-Wechsel
 
