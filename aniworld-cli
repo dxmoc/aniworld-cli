@@ -239,9 +239,16 @@ select_and_save_hoster() {
 
     # Automatische Auswahl (wenn nicht force_selection)
     if [ "$force_selection" = "false" ]; then
-        # Sortiere nach Qualität (1080p > 720p > 480p > HD > N/A)
-        # und dann nach Hoster-Präferenz (Filemoon > Streamtape > Vidmoly > Doodstream > VOE)
+        # Sortiere nach: 1. Sprache (GerDub > GerSub > EngSub)
+        #                2. Qualität (1080p > 720p > 480p > HD)
+        #                3. Hoster (Filemoon > Streamtape > Vidmoly > Doodstream > VOE)
         selected_line=$(echo "$hosters" | awk -F'|' '
+            function language_score(lang) {
+                if (lang == "GerDub") return 300
+                if (lang == "GerSub") return 200
+                if (lang == "EngSub") return 100
+                return 0
+            }
             function quality_score(qual) {
                 if (qual == "1080p") return 5
                 if (qual == "720p") return 4
@@ -258,9 +265,10 @@ select_and_save_hoster() {
                 return 5
             }
             {
+                lang_score = language_score($3)
                 qual_score = quality_score($4)
                 host_score = hoster_score($2)
-                total = (qual_score * 100) + host_score
+                total = (lang_score * 10000) + (qual_score * 100) + host_score
                 print total "|" $0
             }
         ' | sort -t'|' -k1 -nr | head -1 | cut -d'|' -f2-)
