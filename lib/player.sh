@@ -67,12 +67,28 @@ play_video() {
                     --script-opts=ytdl_hook-ytdl_path="$ytdl_path" \
                     --ytdl-format=bestvideo+bestaudio/best \
                     --force-media-title="$CURRENT_TITLE" \
+                    --cache=yes \
+                    --demuxer-max-bytes=150M \
+                    --demuxer-max-back-bytes=75M \
+                    --demuxer-readahead-secs=30 \
+                    --cache-secs=10 \
+                    --hls-bitrate=max \
+                    --stream-buffer-size=2M \
+                    --demuxer-lavf-o=timeout=10000000 \
                     >/dev/null 2>&1 &
             else
                 "$player_cmd" "$video_url" \
                     --referrer="$referrer" \
                     --user-agent="$USER_AGENT" \
                     --force-media-title="$CURRENT_TITLE" \
+                    --cache=yes \
+                    --demuxer-max-bytes=150M \
+                    --demuxer-max-back-bytes=75M \
+                    --demuxer-readahead-secs=30 \
+                    --cache-secs=10 \
+                    --hls-bitrate=max \
+                    --stream-buffer-size=2M \
+                    --demuxer-lavf-o=timeout=10000000 \
                     >/dev/null 2>&1 &
             fi
             ;;
@@ -88,6 +104,9 @@ play_video() {
                 --http-user-agent="$USER_AGENT" \
                 --no-loop \
                 --play-and-exit \
+                --file-caching=5000 \
+                --network-caching=5000 \
+                --live-caching=5000 \
                 >/dev/null 2>&1 &
             ;;
     esac
