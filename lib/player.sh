@@ -54,9 +54,15 @@ play_video() {
                 ytdl_path="youtube-dl"
             fi
 
+            # Bestimme Referrer basierend auf Hoster
+            local referrer="https://aniworld.to"
+            if [[ "$video_url" == *"filemoon"* ]] || [[ "$video_url" == *"ico3c.com"* ]]; then
+                referrer="https://filemoon.to/"
+            fi
+
             if [ -n "$ytdl_path" ]; then
                 "$player_cmd" "$video_url" \
-                    --referrer="https://aniworld.to" \
+                    --referrer="$referrer" \
                     --user-agent="$USER_AGENT" \
                     --script-opts=ytdl_hook-ytdl_path="$ytdl_path" \
                     --ytdl-format=bestvideo+bestaudio/best \
@@ -64,15 +70,21 @@ play_video() {
                     >/dev/null 2>&1 &
             else
                 "$player_cmd" "$video_url" \
-                    --referrer="https://aniworld.to" \
+                    --referrer="$referrer" \
                     --user-agent="$USER_AGENT" \
                     --force-media-title="$CURRENT_TITLE" \
                     >/dev/null 2>&1 &
             fi
             ;;
         vlc)
+            # Bestimme Referrer basierend auf Hoster
+            local referrer="https://aniworld.to"
+            if [[ "$video_url" == *"filemoon"* ]] || [[ "$video_url" == *"ico3c.com"* ]]; then
+                referrer="https://filemoon.to/"
+            fi
+
             "$player_cmd" "$video_url" \
-                --http-referrer="https://aniworld.to" \
+                --http-referrer="$referrer" \
                 --http-user-agent="$USER_AGENT" \
                 --no-loop \
                 --play-and-exit \

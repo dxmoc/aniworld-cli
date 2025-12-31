@@ -310,28 +310,24 @@ extract_filemoon_url() {
     local embed_url="$1"
 
     local html
-    html=$(curl -s -A "$USER_AGENT" "$embed_url")
+    html=$(curl -s -A "$USER_AGENT" -H "Referer: https://aniworld.to/" "$embed_url")
 
-    # Filemoon verwendet verschiedene Patterns für Video-URLs
-    local video_url
+    # Filemoon verwendet ein iframe für das Video - extrahiere iframe src
+    local iframe_url
+    iframe_url=$(echo "$html" | grep -o '<iframe[^>]*src="[^"]*"' | sed -n 's/.*src="\([^"]*\)".*/\1/p' | head -1)
 
-    # Pattern 1: Suche nach m3u8 oder mp4 URLs im JavaScript
-    video_url=$(echo "$html" | grep -o 'https\?://[^"'\'']*\.\(m3u8\|mp4\)[^"'\'']*' | head -1)
+    if [ -n "$iframe_url" ]; then
+        # Stelle sicher, dass die URL vollständig ist
+        if [[ "$iframe_url" == //* ]]; then
+            iframe_url="https:${iframe_url}"
+        elif [[ "$iframe_url" != http* ]]; then
+            iframe_url="https://filemoon.to${iframe_url}"
+        fi
 
-    # Pattern 2: Suche nach "file:" oder "sources:" in JavaScript
-    if [ -z "$video_url" ]; then
-        video_url=$(echo "$html" | sed -n 's/.*\(file\|sources\):\s*["\x27]\(https\?:\/\/[^"'\'']*\.\(m3u8\|mp4\)[^"'\'']*\).*/\2/p' | head -1)
-    fi
-
-    # Pattern 3: Suche nach eval() entschlüsseltem Code (manchmal verwendet Filemoon Obfuscation)
-    if [ -z "$video_url" ]; then
-        video_url=$(echo "$html" | grep -oP 'https?://[^"'\''[:space:]]+filemoon[^"'\''[:space:]]+\.(m3u8|mp4)' | head -1)
-    fi
-
-    if [ -n "$video_url" ]; then
-        echo "$video_url"
+        # Gib iframe-URL zurück - mpv mit yt-dlp kann diese verarbeiten
+        echo "$iframe_url"
     else
-        # Fallback: Embed-URL (mpv mit yt-dlp könnte es schaffen)
+        # Fallback: Haupt-Embed-URL
         echo "$embed_url"
     fi
 }
