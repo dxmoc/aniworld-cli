@@ -389,6 +389,9 @@ main_loop() {
             echo "DEBUG: select_and_save_hoster returned code=$exit_code hoster_id='$hoster_id'" >&2
         fi
         if [ -n "$hoster_id" ]; then
+            # Aktualisiere Titel mit Hoster-Info
+            CURRENT_TITLE="${anime_title} - S${season}E${episode} | ${CURRENT_HOSTER_NAME}"
+
             local video_url
             video_url=$(extract_video_url "$hoster_id")
             if [ -n "$video_url" ]; then
@@ -520,6 +523,9 @@ main_loop() {
                 if [ -n "$hoster_id" ]; then
                     # Lade Video mit neuem Hoster im Hintergrund
                     {
+                        # Aktualisiere Titel mit neuem Hoster
+                        CURRENT_TITLE="${anime_title} - S${season}E${episode} | ${CURRENT_HOSTER_NAME}"
+
                         local video_url
                         video_url=$(extract_video_url "$hoster_id")
                         if [ -n "$video_url" ]; then
@@ -533,14 +539,14 @@ main_loop() {
                 ;;
         esac
 
-        # Aktualisiere CURRENT_TITLE vor dem Abspielen
-        CURRENT_TITLE="${anime_title} - S${season}E${episode}"
-
         # Lade und spiele Episode im Hintergrund (Menu bleibt sichtbar)
         {
             local hoster_id
             hoster_id=$(select_and_save_hoster "$slug" "$season" "$episode" "false")
             if [ -n "$hoster_id" ]; then
+                # Aktualisiere Titel mit Hoster-Info
+                CURRENT_TITLE="${anime_title} - S${season}E${episode} | ${CURRENT_HOSTER_NAME}"
+
                 local video_url
                 video_url=$(extract_video_url "$hoster_id")
                 if [ -n "$video_url" ]; then
