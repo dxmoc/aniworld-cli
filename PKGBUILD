@@ -5,7 +5,7 @@ pkgrel=2
 pkgdesc='CLI tool to browse and watch anime from aniworld.to'
 arch=('any')
 url='https://github.com/dxmoc/aniworld-cli'
-license=('GPL')
+license=('GPL-3.0-or-later')
 depends=('bash' 'curl' 'sed' 'grep' 'fzf' 'nodejs')
 optdepends=(
     'mpv: video playback (recommended)'
