@@ -35,6 +35,7 @@ select_with_fzf() {
     clear
 
     # fzf liest von Datei, nicht von Pipe - stabiler auf Windows
+    # Entferne ANSI Escape-Codes aus Ausgabe (clear fügt sie hinzu)
     fzf --prompt="${prompt}: " \
         --reverse \
         --cycle \
@@ -43,7 +44,7 @@ select_with_fzf() {
         --height=100% \
         --border=rounded \
         --margin=1 \
-        --info=inline < "$tmpfile"
+        --info=inline < "$tmpfile" | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g'
     local exit_code=$?
 
     rm -f "$tmpfile"
