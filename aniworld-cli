@@ -619,7 +619,6 @@ main() {
 
     # Interaktiver Modus (wie ani-cli)
     if [ -z "$search_term" ]; then
-        clear
         echo -ne "${BLUE}Search anime: ${RESET}"
         read -r search_term
 

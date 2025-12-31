@@ -31,10 +31,8 @@ select_with_fzf() {
     local tmpfile=$(mktemp)
     echo "$input" > "$tmpfile"
 
-    # Leere Terminal vor fzf (verhindert Sprünge)
-    clear
-
     # fzf liest von Datei, nicht von Pipe - stabiler auf Windows
+    # --clear sorgt dafür, dass fzf das Terminal selbst managed
     fzf --prompt="${prompt}: " \
         --reverse \
         --cycle \
@@ -43,7 +41,8 @@ select_with_fzf() {
         --height=100% \
         --border=rounded \
         --margin=1 \
-        --info=inline < "$tmpfile"
+        --info=inline \
+        --clear < "$tmpfile"
     local exit_code=$?
 
     rm -f "$tmpfile"
