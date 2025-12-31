@@ -197,7 +197,7 @@ get_hoster_links() {
 extract_video_url() {
     local redirect_id="$1"
 
-    show_loading "Extrahiere Video-URL"
+    show_info "Extrahiere Video-URL..."
 
     # Folge dem Redirect
     local redirect_url="${BASE_URL}/redirect/${redirect_id}"
@@ -208,7 +208,6 @@ extract_video_url() {
                      "$redirect_url")
 
     if [ -z "$embed_url" ]; then
-        clear_loading
         show_error "Konnte Redirect nicht folgen"
         return 1
     fi
@@ -231,7 +230,6 @@ extract_video_url() {
         video_url="$embed_url"
     fi
 
-    clear_loading
     echo "$video_url"
 }
 

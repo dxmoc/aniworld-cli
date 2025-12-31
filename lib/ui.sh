@@ -54,11 +54,9 @@ show_error() {
     fi
 }
 
-# Zeige Info (nur im Debug-Modus)
+# Zeige Info (immer anzeigen)
 show_info() {
-    if [ -n "${DEBUG:-}" ]; then
-        echo -e "${GREEN}INFO: $1${RESET}" >&2
-    fi
+    echo -e "${CYAN}→${RESET} $1" >&2
 }
 
 # Zeige Warnung (nur im Debug-Modus)

@@ -317,6 +317,9 @@ select_and_save_hoster() {
         CURRENT_HOSTER_NAME="${CURRENT_HOSTER_NAME} [${quality}]"
     fi
 
+    # Zeige ausgewählten Hoster
+    show_info "Hoster: ${CURRENT_HOSTER_NAME}"
+
     echo "$CURRENT_HOSTER_ID"
 }
 
