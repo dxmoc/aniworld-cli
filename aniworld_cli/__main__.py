@@ -18,37 +18,37 @@ from . import __version__, i18n
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="aniworld-cli",
-        description="aniworld.to – Streaming-CLI (mpv).",
+        description="Stream anime from aniworld.to with mpv.",
     )
-    p.add_argument("query", nargs="?", help="Suchbegriff (optional)")
-    p.add_argument("--lang", help="Sprachpriorität, z. B. ger-dub,ger-sub,eng-sub")
-    p.add_argument("--hoster", help="Hoster-Priorität, kommagetrennt")
+    p.add_argument("query", nargs="?", help="search term (optional)")
+    p.add_argument("--lang", help="language priority, e.g. ger-dub,ger-sub,eng-sub")
+    p.add_argument("--hoster", help="hoster priority, comma-separated")
     p.add_argument(
         "--episode",
         metavar="S-E",
-        help="Direkt Staffel-Folge wählen, z. B. 1-3 (oder 0-1 für Filme)",
+        help="pick season-episode directly, e.g. 1-3 (or 0-1 for movies)",
     )
     p.add_argument(
         "--no-menu",
         action="store_true",
-        help="Nur Argumente verwenden, keine interaktiven Menüs",
+        help="use arguments only, no interactive menus",
     )
     p.add_argument(
         "--auto",
         action="store_true",
-        help="Auto-Modus: nach jeder Folge automatisch die nächste starten",
+        help="auto mode: start the next episode after each one",
     )
     p.add_argument(
         "--watchlist",
         "-w",
         action="store_true",
-        help="Aus zuletzt gesehenen Serien wählen, ohne zu suchen",
+        help="pick from recently watched series instead of searching",
     )
-    p.add_argument("--player", help="Pfad zu mpv (sonst aus PATH)")
+    p.add_argument("--player", help="path to mpv (default: from PATH)")
     p.add_argument(
         "--debug",
         action="store_true",
-        help="Stream-URL + Header auflösen und ausgeben, mpv nicht starten",
+        help="resolve and print the stream URL and headers, do not start mpv",
     )
     p.add_argument("--version", action="version", version=f"aniworld-cli {__version__}")
     return p
@@ -65,7 +65,11 @@ def _apply_env_overrides(args: argparse.Namespace) -> None:
 
 
 def _force_utf8_stdio() -> None:
-    """Avoid mojibake for German text on legacy Windows consoles."""
+    """Avoid mojibake for non-ASCII titles on legacy Windows consoles."""
+    if sys.platform.startswith("win"):
+        import os
+
+        os.system("")  # noqa: S605,S607 - switches the console into ANSI escape mode
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is not None:
@@ -93,17 +97,17 @@ def main(argv: list[str] | None = None) -> int:
         print(i18n.t("goodbye"))
         return 130
     except CloudflareChallenge:
-        print(i18n.t("cloudflare_block"))
+        cli.error(i18n.t("cloudflare_block"))
         return 1
     except requests.RequestException:
         if args.debug:
             raise
-        print(i18n.t("network_error"))
+        cli.error(i18n.t("network_error"))
         return 1
     except Exception:  # noqa: BLE001 - never show a raw traceback to the user
         if args.debug:
             raise
-        print(i18n.t("unexpected_error"))
+        cli.error(i18n.t("unexpected_error"))
         return 1
 
 

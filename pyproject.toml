@@ -18,7 +18,7 @@ classifiers = [
 dependencies = [
     "requests>=2.31",
     "beautifulsoup4>=4.12",
-    "questionary>=2.0",
+    "iterfzf>=1.9",
 ]
 
 [project.scripts]

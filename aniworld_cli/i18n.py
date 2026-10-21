@@ -1,83 +1,83 @@
-"""All user-facing strings. German only.
+"""All user-facing strings, in English.
 
-Keep every German string here so the rest of the code stays English. Use ``t``
-for lookups; values may contain ``{}`` placeholders for ``str.format``.
+Keep every on-screen string here so wording stays in one place. Use ``t`` for
+lookups; values may contain ``{}`` placeholders for ``str.format``. Menu prompts
+follow ani-cli's wording where it has an equivalent.
 """
 
 from __future__ import annotations
 
 STRINGS: dict[str, str] = {
     # Generic
-    "app_tagline": "aniworld-cli – Streaming über mpv",
-    "goodbye": "Tschüss!",
-    "aborted": "Abgebrochen.",
-    "unexpected_error": "Unerwarteter Fehler. Mehr Details mit --debug.",
+    "goodbye": "Bye!",
+    "aborted": "Aborted.",
+    "unexpected_error": "Unexpected error. Run with --debug for details.",
     # Search
-    "search_prompt": "Suche:",
-    "searching": "Suche läuft …",
-    "no_results": "Keine Treffer für „{}“.",
-    "choose_series": "Serie wählen:",
+    "search_prompt": "Search anime:",
+    "searching": "Searching...",
+    "no_results": "No results found for '{}'!",
+    "choose_series": "Select anime:",
     # Seasons / episodes
-    "loading_series": "Lade Serieninformationen …",
-    "choose_season": "Staffel wählen:",
-    "choose_episode": "Folge wählen:",
-    "season_label": "Staffel {}",
-    "movies_label": "Filme",
-    "no_episodes": "Keine Folgen gefunden.",
+    "loading_series": "Loading series...",
+    "choose_season": "Select season:",
+    "choose_episode": "Select episode:",
+    "season_label": "Season {}",
+    "movies_label": "Movies",
+    "no_episodes": "No episodes found!",
     # Language selection
-    "choose_language": "Sprache / Untertitel wählen:",
-    "lang_ger-dub": "Deutsch (Dub)",
-    "lang_ger-sub": "Original mit deutschem Untertitel (Ger-Sub)",
-    "lang_eng-sub": "Original mit englischem Untertitel (Eng-Sub)",
+    "choose_language": "Select language:",
+    "lang_ger-dub": "German dub",
+    "lang_ger-sub": "Japanese with German subtitles",
+    "lang_eng-sub": "Japanese with English subtitles",
     # Hoster / extraction
-    "loading_hosters": "Lade Hoster …",
-    "no_hosters": "Keine passenden Hoster gefunden.",
-    "resolving_hoster": "Löse Hoster „{}“ auf …",
-    "extract_failed": "Hoster „{}“ konnte nicht aufgelöst werden, versuche nächsten …",
-    "stream_dead": "Stream von „{}“ nicht abspielbar (z. B. 403), versuche nächsten …",
-    "all_hosters_failed": "Kein Hoster lieferte einen abspielbaren Stream.",
-    "resolved_stream": "Stream gefunden über „{}“.",
+    "loading_hosters": "Loading hosters...",
+    "no_hosters": "No matching hosters found!",
+    "resolving_hoster": "Resolving {}...",
+    "extract_failed": "Could not resolve {}, trying the next hoster...",
+    "stream_dead": "Stream from {} is not playable (e.g. 403), trying the next hoster...",
+    "all_hosters_failed": "No hoster returned a playable stream!",
+    "resolved_stream": "{} links fetched",
     # Player
-    "mpv_missing": "mpv wurde nicht gefunden.",
-    "mpv_hint_linux": "Installation (Linux): „sudo pacman -S mpv“ / „sudo apt install mpv“ / „sudo dnf install mpv“.",
-    "mpv_hint_windows": "Installation (Windows): „scoop install mpv“ oder „winget install mpv“.",
-    "starting_player": "Starte mpv …",
-    "player_error": "mpv konnte nicht gestartet werden.",
+    "mpv_missing": "mpv not found!",
+    "mpv_hint_linux": "Install it with 'sudo pacman -S mpv', 'sudo apt install mpv' or 'sudo dnf install mpv'.",
+    "mpv_hint_windows": "Install it with 'scoop install mpv' or 'winget install mpv'.",
+    "starting_player": "Starting mpv...",
     # Post-playback menu
-    "what_next": "Was nun?",
-    "next_episode": "Nächste Folge",
-    "other_episode": "Andere Folge",
-    "quit": "Beenden",
-    "no_next_episode": "Keine weitere Folge in dieser Staffel.",
-    "now_playing": "Spiele: {}",
+    "what_next": "Playing {} of {}...",
+    "next_episode": "next",
+    "replay_episode": "replay",
+    "previous_episode": "previous",
+    "other_episode": "select",
+    "quit": "quit",
+    "now_playing": "Playing {}...",
     # Resume / watchlist / auto mode
-    "resume_prompt": "Fortsetzen?",
-    "resume_continue": "Weiter bei {}",
-    "resume_choose_other": "Andere Folge wählen",
-    "choose_from_watchlist": "Aus deiner Watchlist wählen:",
-    "watchlist_entry": "{} – zuletzt {}",
-    "watchlist_empty": "Deine Watchlist ist leer – schau erst etwas an, dann merke ich es mir.",
-    "auto_next": "Auto-Modus: nächste Folge …",
-    "auto_season_end": "Staffelende erreicht – Auto-Modus beendet.",
+    "resume_prompt": "Resume?",
+    "resume_continue": "Continue with {}",
+    "resume_choose_other": "Select another episode",
+    "choose_from_watchlist": "Select anime:",
+    "watchlist_entry": "{} - last watched {}",
+    "watchlist_empty": "Your watchlist is empty. Watch something first and it will show up here.",
+    "auto_next": "Auto mode: next episode...",
+    "auto_season_end": "End of season reached, auto mode stopped.",
     # Argument handling
-    "episode_arg_invalid": "Ungültiges Format für --episode: „{}“. Erwartet: Staffel-Folge, z. B. 1-3 (oder 0-1 für Filme).",
-    "episode_not_found": "Folge {} nicht gefunden.",
-    "season_not_found": "Staffel {} nicht gefunden.",
-    "no_query": "Kein Suchbegriff angegeben.",
+    "episode_arg_invalid": "Invalid --episode value '{}'. Expected season-episode, e.g. 1-3 (or 0-1 for movies).",
+    "episode_not_found": "Episode {} not found!",
+    "season_not_found": "Season {} not found!",
+    "no_query": "No search term given!",
     # Network / anti-bot
-    "network_error": "Netzwerkfehler. Ist die Seite erreichbar?",
+    "network_error": "Network error. Is the site reachable?",
     "cloudflare_block": (
-        "Die Seite ist hinter einem Cloudflare-Schutz. "
-        "Optional hilft ein externer „flaresolverr“-Dienst (nicht enthalten)."
+        "The site is behind a Cloudflare challenge. "
+        "An external 'flaresolverr' service can help (not included)."
     ),
     # Debug
-    "debug_stream_url": "Stream-URL: {}",
-    "debug_headers": "Header: {}",
+    "debug_stream_url": "Stream URL: {}",
+    "debug_headers": "Headers: {}",
 }
 
 
 def t(key: str, *args: object) -> str:
-    """Look up a German string and optionally ``format`` it."""
+    """Look up a string and optionally ``format`` it."""
     text = STRINGS.get(key, key)
     if args:
         return text.format(*args)

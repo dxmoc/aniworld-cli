@@ -120,7 +120,7 @@ def resolve_stream(
     """Try ordered hosters until one extractor yields a *playable* Stream.
 
     If ``language`` is given, only hosters of that language are tried. ``report``
-    receives German status lines (defaults to no-op). When ``verify`` is set
+    receives status lines (defaults to no-op). When ``verify`` is set
     (default), a resolved stream is liveness-checked and skipped if its segments
     do not load. Returns the resolved ``(Stream, Hoster)`` or ``(None, None)``.
     """

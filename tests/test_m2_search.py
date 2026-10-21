@@ -44,3 +44,16 @@ def test_parse_handles_garbage():
     assert parse([]) == []
     assert parse([{"link": "/support/frage/x", "title": "x"}]) == []
     assert parse([{"foo": "bar"}]) == []
+
+
+def test_parse_moves_title_matches_first_keeping_site_order():
+    payload = [
+        {"link": "/anime/stream/toradora", "title": "Toradora!"},
+        {"link": "/anime/stream/frieren", "title": "<em>Frieren</em>: Beyond"},
+        {"link": "/anime/stream/berghof", "title": "Die Kinder vom Berghof"},
+        {"link": "/anime/stream/frieren-2", "title": "Frieren 2"},
+    ]
+    assert [s.slug for s in parse(payload, "frieren")] == [
+        "frieren", "frieren-2", "toradora", "berghof"
+    ]
+    assert [s.slug for s in parse(payload)][0] == "toradora"

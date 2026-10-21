@@ -33,8 +33,12 @@ def _slug(link: str) -> str:
     return [p for p in link.split("/") if p][2]
 
 
-def parse(payload: list[dict]) -> list[Series]:
-    """Turn the raw JSON array into de-duplicated series. Offline-testable."""
+def parse(payload: list[dict], query: str = "") -> list[Series]:
+    """Turn the raw JSON array into de-duplicated series. Offline-testable.
+
+    The site ranks loosely (``frieren`` lists "Toradora!" first), so series whose
+    title contains ``query`` are moved to the front, keeping the site's order.
+    """
     seen: set[str] = set()
     out: list[Series] = []
     for entry in payload:
@@ -53,7 +57,8 @@ def parse(payload: list[dict]) -> list[Series]:
                 description=_clean(entry.get("description", "")),
             )
         )
-    return out
+    needle = query.strip().lower()
+    return sorted(out, key=lambda s: needle not in s.title.lower()) if needle else out
 
 
 def search(query: str) -> list[Series]:
@@ -72,4 +77,4 @@ def search(query: str) -> list[Series]:
         return []
     if not isinstance(payload, list):
         return []
-    return parse(payload)
+    return parse(payload, query)

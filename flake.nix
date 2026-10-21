@@ -55,7 +55,7 @@
             dependencies = with python.pkgs; [
               requests
               beautifulsoup4
-              questionary
+              iterfzf
             ];
 
             pythonImportsCheck = [ "aniworld_cli" ];
@@ -66,7 +66,7 @@
             buildInputs = [ pkgs.makeWrapper ];
             postBuild = ''
               wrapProgram $out/bin/aniworld-cli \
-                --suffix PATH : ${lib.makeBinPath [ pkgs.mpv ]}
+                --suffix PATH : ${lib.makeBinPath [ pkgs.mpv pkgs.fzf ]}
             '';
           };
         in

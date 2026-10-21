@@ -8,8 +8,8 @@ from aniworld_cli.models import Episode, Hoster, Series, Stream
 
 
 def test_i18n_lookup_and_format():
-    assert i18n.t("quit") == "Beenden"
-    assert i18n.t("no_results", "naruto") == "Keine Treffer für „naruto“."
+    assert i18n.t("quit") == "quit"
+    assert i18n.t("no_results", "naruto") == "No results found for 'naruto'!"
     # Unknown key falls back to the key itself.
     assert i18n.t("does_not_exist") == "does_not_exist"
 

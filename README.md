@@ -1,16 +1,13 @@
 # aniworld-cli
 
 > A lean, **streaming-only CLI** for [aniworld.to](https://aniworld.to) –
-> written from scratch in pure Python, with a German user interface.
+> written from scratch in pure Python, with ani-cli's fzf look.
 > Playback runs exclusively through **mpv**. No downloads.
 
 [![tests](https://github.com/dxmoc/aniworld-cli-py/actions/workflows/tests.yml/badge.svg)](https://github.com/dxmoc/aniworld-cli-py/actions/workflows/tests.yml)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green)](LICENSE)
 [![Platforms](https://img.shields.io/badge/os-Linux%20%7C%20Windows%20%7C%20WSL-lightgrey)]()
-
-> **Note:** The on-screen text of the app is **German** (it targets aniworld.to,
-> a German anime site). This README is in English; the CLI prompts are not.
 
 ---
 
@@ -31,7 +28,9 @@
 ## Features
 
 - Search via aniworld.to's AJAX endpoint
-- Pick **series → season (incl. movies) → episode** with arrow keys
+- Pick **series → season (incl. movies) → episode** in **fzf menus that look
+  like ani-cli's**: type to filter, arrow keys to move. fzf ships inside the
+  `iterfzf` dependency, nothing extra to install.
 - **Per-episode language/subtitle selection**: when an episode offers more
   than one language (e.g. German Dub / German Sub / Eng Sub) a menu appears, and
   your choice is remembered for the next episodes. With `--lang` or `--no-menu`
@@ -40,7 +39,7 @@
   **Vidmoly** (see [hoster status](#hoster-status) for the rest). Each resolved
   stream is **liveness-checked**, so a hoster that hands out dead (403) segments
   is skipped automatically instead of stalling the player.
-- "Next episode / Other episode / Quit" loop after playback
+- ani-cli style `next / replay / previous / select / quit` menu after playback
 - **Resume**: your last-watched episode per series is remembered, and picking
   that series again offers "continue where you left off"
 - **Watchlist** (`--watchlist` / `-w`): jump straight into a previously watched
@@ -249,13 +248,13 @@ Language tokens: `ger-dub` (German dub), `ger-sub` (German subtitles),
 
 | Symptom | Cause / fix |
 |---------|-------------|
-| `mpv wurde nicht gefunden` | Install mpv (see [step 1](#1--install-mpv)) or use `--player <path>`. |
+| `mpv not found!` | Install mpv (see [step 1](#1--install-mpv)) or use `--player <path>`. |
 | Cloudflare / anti-bot message | The site is blocking bots. An **external** [`flaresolverr`](https://github.com/FlareSolverr/FlareSolverr) service can help (not bundled). |
-| `Kein Hoster lieferte einen abspielbaren Stream` | Hosters temporarily unavailable; retry later or pick another title/episode. |
-| Garbled umlauts in the console | UTF-8 is forced automatically; on old Windows consoles `chcp 65001` helps. |
+| `No hoster returned a playable stream!` | Hosters temporarily unavailable; retry later or pick another title/episode. |
+| Garbled characters in the console | UTF-8 is forced automatically; on old Windows consoles `chcp 65001` helps. |
 | Playback won't start in WSL | No GUI backend – use `--debug`, or WSLg (Windows 11). |
 
-The `--debug` flag also shows full tracebacks instead of a friendly German
+The `--debug` flag also shows full tracebacks instead of a short
 message, which helps when reporting issues.
 
 ---
@@ -286,7 +285,7 @@ registering it — see the extractor contract in that package's `__init__.py`.
   against the **live** site; when needed, save fresh samples into
   `tests/fixtures/` and adjust the parsers.
 - Architecture: `search.py` → `series.py`/`episode.py` → `resolve.py` →
-  `extractors/<hoster>.py` → `player.py`. All German strings live in `i18n.py`.
+  `extractors/<hoster>.py` → `player.py`. All on-screen strings live in `i18n.py`.
 
 ---
 
@@ -312,7 +311,7 @@ A copy of the license is included in this repository: [LICENSE](./LICENSE)
 Changes made to the original work:
 - Rewritten in Python
 - Ported from generic anime-streaming sites to aniworld.to specifically
-- Added a German-language interactive CLI (search, series/season/episode menus)
+- Added season, episode and language menus for aniworld.to (fzf, like ani-cli)
 - Added resume state and a watchlist
 - Added binge/auto-advance mode
 - Added liveness-checked hoster fallback (VOE, Vidmoly)
