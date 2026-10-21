@@ -30,6 +30,8 @@
   mpv starts, so a hoster that hands out dead (403) segments is skipped instead
   of stalling the player.
 - **mpv only**: streaming, no downloads. mpv shows `Series – S01E03` as the title.
+- **Update hint**: once a day it checks GitHub for a newer release and prints
+  the upgrade command (pipx or pip). Offline or rate-limited, it stays quiet.
 
 ## Install
 

@@ -79,6 +79,8 @@ STRINGS: dict[str, str] = {
         "The site is behind a Cloudflare challenge. "
         "An external 'flaresolverr' service can help (not included)."
     ),
+    # Update check
+    "update_available": "Update available: {} (installed {}). Run: {}",
     # Debug
     "debug_stream_url": "Stream URL: {}",
     "debug_headers": "Headers: {}",

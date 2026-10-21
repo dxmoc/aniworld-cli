@@ -40,6 +40,11 @@ def info(message: str) -> None:
     print(_styled(message, "1;34", sys.stdout), flush=True)
 
 
+def warn(message: str) -> None:
+    """Notice line, in ani-cli's yellow."""
+    print(_styled(message, "1;33", sys.stdout), flush=True)
+
+
 def error(message: str) -> None:
     """Error line, same look as ani-cli's ``die`` (without exiting)."""
     print(_styled(message, "1;31", sys.stderr), file=sys.stderr, flush=True)
@@ -252,6 +257,13 @@ def _nav_after_progress(series: Series, progress: dict) -> Nav | None:
 
 def run(args: argparse.Namespace) -> int:
     """Top-level entry. Returns a process exit code."""
+    if sys.stdout.isatty():  # scripts and pipes do not need the hint
+        from . import update
+
+        notice = update.update_notice()
+        if notice:
+            warn(notice)
+
     # mpv is required for actual playback (not for --debug).
     if not args.debug and not check_player(args.player):
         return 1
