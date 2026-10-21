@@ -23,7 +23,8 @@ def test_parse_version():
 def test_notice_only_for_newer_release(monkeypatch):
     monkeypatch.setattr(update, "_fetch_latest", lambda: "v0.10.0")
     notice = update.update_notice("0.9.1")
-    assert "0.10.0" in notice and "0.9.1" in notice and "pip install -U" in notice
+    assert "0.10.0" in notice and "0.9.1" in notice
+    assert "pip install -U git+https://github.com/dxmoc/aniworld-cli@v0.10.0" in notice
     assert update.update_notice("0.10.0") is None
     assert update.update_notice("0.0.0.dev0") is None
 
@@ -51,6 +52,6 @@ def test_network_errors_are_silent_and_cached(monkeypatch):
 def test_upgrade_command_matches_install(monkeypatch):
     monkeypatch.setattr(update, "_fetch_latest", lambda: "v9.0.0")
     monkeypatch.setattr(update.sys, "prefix", "/home/u/.local/share/pipx/venvs/aniworld-cli")
-    assert "pipx upgrade aniworld-cli" in update.update_notice("0.2.3")
+    assert "pipx install --force git+https://github.com/dxmoc/aniworld-cli@v9.0.0" in update.update_notice("0.2.3")
     monkeypatch.setattr(update.sys, "prefix", "/nix/store/abc-python3")
     assert update.update_notice("0.2.3") is None

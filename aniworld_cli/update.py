@@ -61,10 +61,16 @@ def latest_version(now: float | None = None) -> str | None:
     return latest
 
 
-def _upgrade_command() -> str:
+def _upgrade_command(tag: str) -> str:
+    """Reinstall from the release tag; installs from git never move on their own.
+
+    ``pipx upgrade`` keeps a git install unchanged, and the package is not on
+    PyPI, so both commands point straight at the tag.
+    """
+    source = f"git+https://github.com/dxmoc/aniworld-cli@{tag}"
     if "pipx" in sys.prefix.replace("\\", "/"):
-        return "pipx upgrade aniworld-cli"
-    return "pip install -U git+https://github.com/dxmoc/aniworld-cli"
+        return f"pipx install --force {source}"
+    return f"pip install -U {source}"
 
 
 def update_notice(current: str = __version__) -> str | None:
@@ -77,4 +83,4 @@ def update_notice(current: str = __version__) -> str | None:
     theirs = parse_version(latest) if latest else None
     if theirs is None or theirs <= mine:
         return None
-    return i18n.t("update_available", latest.lstrip("v"), current, _upgrade_command())
+    return i18n.t("update_available", latest.lstrip("v"), current, _upgrade_command(latest))

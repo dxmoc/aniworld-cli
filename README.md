@@ -57,6 +57,13 @@ With Nix (flakes enabled; mpv and fzf come along):
 nix run github:dxmoc/aniworld-cli
 ```
 
+To update later, install again over the old version (`pipx upgrade` does not
+re-fetch installs from git; aniworld-cli is not on PyPI):
+
+```bash
+pipx install --force git+https://github.com/dxmoc/aniworld-cli
+```
+
 ### 2. mpv
 
 | System | Command |
