@@ -95,4 +95,4 @@ def test_build_command_includes_media_title():
 
 def test_build_command_without_title_unchanged():
     stream = Stream(url="https://cdn/x.m3u8")
-    assert player.build_command("mpv", stream) == ["mpv", "https://cdn/x.m3u8"]
+    assert player.build_command("mpv", stream) == ["mpv", "--no-terminal", "https://cdn/x.m3u8"]

@@ -46,8 +46,11 @@ def build_command(mpv_path: str, stream: Stream, title: str | None = None) -> li
 
     ``title`` (e.g. "Naruto – S03E12") is passed via ``--force-media-title`` so
     mpv shows the episode name instead of the opaque, tokenised CDN URL.
+
+    ``--no-terminal`` keeps mpv's log (track list, harmless ffmpeg TLS noise on
+    quit) out of the terminal, as with ani-cli; mpv is controlled in its window.
     """
-    cmd = [mpv_path]
+    cmd = [mpv_path, "--no-terminal"]
     headers = dict(stream.headers)
     user_agent = next(
         (headers.pop(k) for k in list(headers) if k.lower() == "user-agent"), None

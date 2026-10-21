@@ -45,6 +45,7 @@ STRINGS: dict[str, str] = {
         "or with 'winget install --id shinchiro.mpv'. Open a new terminal afterwards."
     ),
     "starting_player": "Starting mpv...",
+    "player_failed": "mpv stopped with an error (exit code {}). Try another hoster with --hoster.",
     "fzf_missing": (
         "fzf not found! Install it ('sudo apt install fzf', 'scoop install fzf') "
         "or install aniworld-cli from the wheel, which ships fzf."

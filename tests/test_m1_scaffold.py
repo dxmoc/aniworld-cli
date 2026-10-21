@@ -50,7 +50,7 @@ def test_player_command_separates_user_agent():
 
 def test_player_command_no_headers():
     cmd = player.build_command("mpv", Stream(url="https://x/y.mp4"))
-    assert cmd == ["mpv", "https://x/y.mp4"]
+    assert cmd == ["mpv", "--no-terminal", "https://x/y.mp4"]
 
 
 def test_model_labels():

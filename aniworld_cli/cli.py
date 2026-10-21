@@ -465,8 +465,12 @@ def play_stream(stream: Stream, player_path: str | None, title: str | None = Non
     """Launch mpv, surfacing an error if it cannot start."""
     info(i18n.t("starting_player"))
     try:
-        return player.play(stream, player_path, title)
+        rc = player.play(stream, player_path, title)
     except player.PlayerNotFound as exc:
         error(i18n.t("mpv_missing"))
         error(str(exc))
         return 1
+    # mpv no longer prints to the terminal, so say when it failed (0 = quit or end).
+    if rc != 0:
+        error(i18n.t("player_failed", rc))
+    return rc
