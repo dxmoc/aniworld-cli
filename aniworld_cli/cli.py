@@ -99,7 +99,7 @@ def _episode_label(episode: Episode) -> str:
 
 
 def _playing_label(episode: Episode) -> str:
-    """"Episode 2" for the playing lines, as in ani-cli; movies keep "Film N"."""
+    """"episode 2" for the playing lines, as in ani-cli; movies keep "Film N"."""
     return i18n.t("episode_label", episode.number) if episode.season else episode.label
 
 

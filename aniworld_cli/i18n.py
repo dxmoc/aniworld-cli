@@ -50,7 +50,7 @@ STRINGS: dict[str, str] = {
     "other_episode": "select",
     "quit": "quit",
     "now_playing": "Playing {}...",
-    "episode_label": "Episode {}",
+    "episode_label": "episode {}",
     # Resume / watchlist / auto mode
     "resume_prompt": "Resume?",
     "resume_continue": "Continue with {}",

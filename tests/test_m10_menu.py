@@ -93,5 +93,5 @@ def test_no_menu_errors_exit_nonzero(monkeypatch):
 
 
 def test_playing_lines_say_episode_not_season_code():
-    assert cli._playing_label(Episode("s", "/e", 2, 3)) == "Episode 3"
+    assert cli._playing_label(Episode("s", "/e", 2, 3)) == "episode 3"
     assert cli._playing_label(Episode("s", "/f", 0, 1)) == "Film 1"
