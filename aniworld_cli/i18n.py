@@ -40,7 +40,10 @@ STRINGS: dict[str, str] = {
     # Player
     "mpv_missing": "mpv not found!",
     "mpv_hint_linux": "Install it with 'sudo pacman -S mpv', 'sudo apt install mpv' or 'sudo dnf install mpv'.",
-    "mpv_hint_windows": "Install it with 'scoop install mpv' or 'winget install mpv'.",
+    "mpv_hint_windows": (
+        "Install it with 'scoop bucket add extras' and then 'scoop install mpv', "
+        "or with 'winget install --id shinchiro.mpv'. Open a new terminal afterwards."
+    ),
     "starting_player": "Starting mpv...",
     "fzf_missing": (
         "fzf not found! Install it ('sudo apt install fzf', 'scoop install fzf') "
