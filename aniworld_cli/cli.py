@@ -10,6 +10,7 @@ without launching mpv.
 from __future__ import annotations
 
 import argparse
+import shutil
 import sys
 from typing import cast
 
@@ -181,7 +182,15 @@ def _initial_nav(series: Series, args: argparse.Namespace) -> Nav | None:
         error(i18n.t("episode_not_found", number))
         return None
 
+    from . import state
+
+    progress = state.get_progress(series.slug)
     if args.no_menu:
+        # -w --no-menu continues the most recent series instead of restarting it.
+        if args.watchlist and progress:
+            resumed = _nav_after_progress(series, progress)
+            if resumed is not None:
+                return resumed
         seasons = series_mod.list_seasons(series)
         if not seasons:
             error(i18n.t("no_episodes"))
@@ -194,48 +203,61 @@ def _initial_nav(series: Series, args: argparse.Namespace) -> Nav | None:
             return None
         return season, episodes, 0
 
-    # Interactive: offer to resume where this series was last left off.
-    from . import state
-
-    progress = state.get_progress(series.slug)
-    if progress:
+    # Interactive: offer to continue after the episode watched last.
+    resumed = _nav_after_progress(series, progress) if progress else None
+    if resumed is not None:
+        _season, episodes, index = resumed
         choice = _select(
             i18n.t("resume_prompt"),
             [
-                (i18n.t("resume_continue", progress.get("label", "?")), "resume"),
+                (i18n.t("resume_continue", episodes[index].label), "resume"),
                 (i18n.t("resume_choose_other"), "other"),
             ],
         )
         if choice is None:
-            return None  # aborted (Ctrl-C / empty)
+            return None  # aborted (Esc / Ctrl-C)
         if choice == "resume":
-            resumed = _nav_from_progress(series, progress)
-            if resumed is not None:
-                return resumed
-            # Saved episode no longer exists -> fall back to manual selection.
+            return resumed
 
     return choose_episode_nav(series)
 
 
-def _nav_from_progress(series: Series, progress: dict) -> Nav | None:
-    """Rebuild a Nav position from a stored resume entry, or None if it's gone."""
+def _nav_after_progress(series: Series, progress: dict) -> Nav | None:
+    """Position of the episode after the stored one, like ani-cli's history.
+
+    At the end of a season this is the next season's first episode; after the
+    very last episode it stays on that episode. None if it no longer exists.
+    """
     from . import series as series_mod
 
     season = progress.get("season")
     number = progress.get("number")
     if season is None or number is None:
         return None
+    info(i18n.t("loading_series"))
     episodes = series_mod.list_episodes(series, season)
-    for idx, ep in enumerate(episodes):
-        if ep.number == number:
-            return season, episodes, idx
-    return None
+    index = next((i for i, ep in enumerate(episodes) if ep.number == number), None)
+    if index is None:
+        return None
+    if index + 1 < len(episodes):
+        return season, episodes, index + 1
+    if season != 0:  # films (season 0) do not continue into season 1
+        later = [s for s in series_mod.list_seasons(series) if s > season]
+        if later:
+            next_episodes = series_mod.list_episodes(series, later[0])
+            if next_episodes:
+                return later[0], next_episodes, 0
+    return season, episodes, index
 
 
 def run(args: argparse.Namespace) -> int:
     """Top-level entry. Returns a process exit code."""
     # mpv is required for actual playback (not for --debug).
     if not args.debug and not check_player(args.player):
+        return 1
+    # fzf draws every menu; only source installs (e.g. Nix) can lack it.
+    if not args.no_menu and not (_FZF != "fzf" or shutil.which("fzf")):
+        error(i18n.t("fzf_missing"))
         return 1
 
     # Without menus nothing can be aborted, so a missing series/episode is an error.

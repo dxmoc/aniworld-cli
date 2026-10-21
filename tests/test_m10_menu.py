@@ -95,3 +95,44 @@ def test_no_menu_errors_exit_nonzero(monkeypatch):
 def test_playing_lines_say_episode_not_season_code():
     assert cli._playing_label(Episode("s", "/e", 2, 3)) == "episode 3"
     assert cli._playing_label(Episode("s", "/f", 0, 1)) == "Film 1"
+
+
+def _fake_site(monkeypatch, seasons):
+    """Serve ``{season: episode_count}`` instead of the live series pages."""
+    from aniworld_cli import series as series_mod
+
+    monkeypatch.setattr(series_mod, "list_seasons", lambda _s: sorted(seasons))
+    monkeypatch.setattr(
+        series_mod,
+        "list_episodes",
+        lambda _s, season: [Episode("s", f"/{season}/{i}", season, i) for i in range(1, seasons[season] + 1)],
+    )
+
+
+@pytest.mark.parametrize(
+    ("seasons", "stored", "expected"),
+    [
+        ({1: 3}, (1, 1), (1, 2)),  # next episode in the same season
+        ({1: 3, 2: 2}, (1, 3), (2, 1)),  # season finished -> next season
+        ({0: 2, 1: 3}, (0, 2), (0, 2)),  # last film does not jump into season 1
+        ({1: 3}, (1, 3), (1, 3)),  # series finished -> stay on the last episode
+    ],
+)
+def test_resume_continues_after_last_watched(monkeypatch, seasons, stored, expected):
+    _fake_site(monkeypatch, seasons)
+    nav = cli._nav_after_progress(Series("T", "t", "/t"), {"season": stored[0], "number": stored[1]})
+    season, episodes, index = nav
+    assert (season, episodes[index].number) == expected
+
+
+def test_resume_gone_episode_returns_none(monkeypatch):
+    _fake_site(monkeypatch, {1: 2})
+    assert cli._nav_after_progress(Series("T", "t", "/t"), {"season": 1, "number": 9}) is None
+
+
+def test_missing_fzf_stops_before_menus(monkeypatch):
+    monkeypatch.setattr(cli, "_FZF", "fzf")
+    monkeypatch.setattr(cli.shutil, "which", lambda _n: None)
+    monkeypatch.setattr(cli, "_search_and_pick", lambda _a: pytest.fail("menus were opened"))
+    args = argparse.Namespace(debug=True, no_menu=False, watchlist=False, player=None)
+    assert cli.run(args) == 1

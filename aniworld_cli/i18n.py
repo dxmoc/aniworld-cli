@@ -42,6 +42,10 @@ STRINGS: dict[str, str] = {
     "mpv_hint_linux": "Install it with 'sudo pacman -S mpv', 'sudo apt install mpv' or 'sudo dnf install mpv'.",
     "mpv_hint_windows": "Install it with 'scoop install mpv' or 'winget install mpv'.",
     "starting_player": "Starting mpv...",
+    "fzf_missing": (
+        "fzf not found! Install it ('sudo apt install fzf', 'scoop install fzf') "
+        "or install aniworld-cli from the wheel, which ships fzf."
+    ),
     # Post-playback menu
     "what_next": "Playing {} of {}...",
     "next_episode": "next",

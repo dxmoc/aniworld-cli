@@ -4,7 +4,7 @@
 > written from scratch in pure Python, with ani-cli's fzf look.
 > Playback runs exclusively through **mpv**. No downloads.
 
-[![tests](https://github.com/dxmoc/aniworld-cli-py/actions/workflows/tests.yml/badge.svg)](https://github.com/dxmoc/aniworld-cli-py/actions/workflows/tests.yml)
+[![tests](https://github.com/dxmoc/aniworld-cli/actions/workflows/tests.yml/badge.svg)](https://github.com/dxmoc/aniworld-cli/actions/workflows/tests.yml)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green)](LICENSE)
 [![Platforms](https://img.shields.io/badge/os-Linux%20%7C%20Windows%20%7C%20WSL-lightgrey)]()
@@ -41,9 +41,10 @@
   is skipped automatically instead of stalling the player.
 - ani-cli style `next / replay / previous / select / quit` menu after playback
 - **Resume**: your last-watched episode per series is remembered, and picking
-  that series again offers "continue where you left off"
+  that series again offers to continue with the **next** episode (into the next
+  season when one ends), like ani-cli's history
 - **Watchlist** (`--watchlist` / `-w`): jump straight into a previously watched
-  series without searching
+  series without searching; `-w --no-menu` continues the most recent one
 - **Binge mode** (`--auto`): auto-advance to the next episode until the season ends
 - mpv shows the episode name (`Series – S03E12`) instead of the raw CDN URL
 - `--debug` resolves the final stream URL without launching mpv
@@ -55,8 +56,8 @@
 ```bash
 # 1. Install mpv (see per-OS instructions below)
 # 2. Get the repo
-git clone https://github.com/dxmoc/aniworld-cli-py.git
-cd aniworld-cli-py
+git clone https://github.com/dxmoc/aniworld-cli.git
+cd aniworld-cli
 
 # 3. Virtual environment + dependencies
 python -m venv .venv
@@ -123,8 +124,8 @@ Requires **Python 3.9+** and **git**.
 <summary><b>Linux / macOS / WSL</b></summary>
 
 ```bash
-git clone https://github.com/dxmoc/aniworld-cli-py.git
-cd aniworld-cli-py
+git clone https://github.com/dxmoc/aniworld-cli.git
+cd aniworld-cli
 
 python3 -m venv .venv
 source .venv/bin/activate
@@ -137,8 +138,8 @@ pip install -r requirements.txt
 <summary><b>Windows PowerShell</b></summary>
 
 ```powershell
-git clone https://github.com/dxmoc/aniworld-cli-py.git
-cd aniworld-cli-py
+git clone https://github.com/dxmoc/aniworld-cli.git
+cd aniworld-cli
 
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -262,7 +263,7 @@ message, which helps when reporting issues.
 ## Hoster status
 
 aniworld.to changes hosters and their embed markup regularly, so extractor
-health drifts over time. Last checked **2026-07-14**:
+health drifts over time. Last checked **2026-10-21**:
 
 | Hoster      | Status                                                                |
 |-------------|-----------------------------------------------------------------------|

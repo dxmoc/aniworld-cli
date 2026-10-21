@@ -30,3 +30,52 @@ jobs:
 
       - name: Run tests
         run: python -m pytest -q
+  windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.14"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install the package
+        run: |
+          python -m pip install --upgrade pip
+          pip install . pytest
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Bundled fzf.exe works
+        run: >
+          python -c "import subprocess; from iterfzf import BUNDLED_EXECUTABLE as f;
+          assert f.exists(), f;
+          out = subprocess.run([str(f), '--filter', 'b'], input='a\nb\n', capture_output=True, text=True, check=True).stdout;
+          assert out.strip() == 'b', out"
+
+      - name: CLI starts
+        run: aniworld-cli --version
+
+      - name: Install mpv via Scoop (as in the README)
+        run: |
+          Invoke-Expression "& {$(Invoke-RestMethod get.scoop.sh)} -RunAsAdmin"
+          scoop bucket add extras
+          scoop install mpv
+          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\scoop\shims"
+
+      - name: Live playback, 5 s without window
+        # aniworld.to may block GitHub's IP ranges, which says nothing about the code.
+        continue-on-error: true
+        env:
+          MPV_HOME: ${{ github.workspace }}\.ci-mpv
+        run: |
+          New-Item -ItemType Directory -Force .ci-mpv | Out-Null
+          "vo=null`nao=null`nend=5" | Out-File -Encoding ascii .ci-mpv\mpv.conf
+          aniworld-cli frieren --no-menu --episode 1-1
