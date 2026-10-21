@@ -98,6 +98,11 @@ def _episode_label(episode: Episode) -> str:
     return f"{episode.number} {episode.title}" if episode.title else str(episode.number)
 
 
+def _playing_label(episode: Episode) -> str:
+    """"Episode 2" for the playing lines, as in ani-cli; movies keep "Film N"."""
+    return i18n.t("episode_label", episode.number) if episode.season else episode.label
+
+
 def _resolve_query(args: argparse.Namespace) -> str | None:
     query = args.query
     if not query and not args.no_menu:
@@ -329,7 +334,7 @@ def _playback_loop(series: Series, nav: Nav, args: argparse.Namespace) -> int:
         tty = sys.stdout.isatty()
         if tty:
             print("\0337", end="", flush=True)
-        info(i18n.t("now_playing", episode.label))
+        info(i18n.t("now_playing", _playing_label(episode)))
         rc, preferred_lang = resolve_and_play(episode, args, preferred_lang, series)
         if tty and rc == 0 and not args.debug:
             print("\0338\033[J", end="", flush=True)
@@ -429,7 +434,7 @@ def post_playback_menu(
     if has_previous:
         choices.append((i18n.t("previous_episode"), "previous"))
     choices += [(i18n.t("other_episode"), "other"), (i18n.t("quit"), "quit")]
-    return _select(i18n.t("what_next", episode.label, series.title), choices)  # type: ignore[return-value]
+    return _select(i18n.t("what_next", _playing_label(episode), series.title), choices)  # type: ignore[return-value]
 
 
 def play_stream(stream: Stream, player_path: str | None, title: str | None = None) -> int:
