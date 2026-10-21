@@ -9,7 +9,7 @@ from __future__ import annotations
 
 STRINGS: dict[str, str] = {
     # Generic
-    "goodbye": "Bye!",
+    "goodbye": "See you, Space Cowboy...",
     "aborted": "Aborted.",
     "unexpected_error": "Unexpected error. Run with --debug for details.",
     # Search
