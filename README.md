@@ -1,318 +1,187 @@
-# aniworld-cli
+<h1 align="center">aniworld-cli</h1>
 
-> A lean, **streaming-only CLI** for [aniworld.to](https://aniworld.to) –
-> written from scratch in pure Python, with ani-cli's fzf look.
-> Playback runs exclusively through **mpv**. No downloads.
+<p align="center">
+  Stream anime from <a href="https://aniworld.to">aniworld.to</a> in your terminal, with the look and feel of
+  <a href="https://github.com/pystardust/ani-cli">ani-cli</a>.
+</p>
 
-[![tests](https://github.com/dxmoc/aniworld-cli/actions/workflows/tests.yml/badge.svg)](https://github.com/dxmoc/aniworld-cli/actions/workflows/tests.yml)
-[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green)](LICENSE)
-[![Platforms](https://img.shields.io/badge/os-Linux%20%7C%20Windows%20%7C%20WSL-lightgrey)]()
+<p align="center">
+  <a href="https://github.com/dxmoc/aniworld-cli/actions/workflows/tests.yml"><img src="https://github.com/dxmoc/aniworld-cli/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
+  <a href="https://github.com/dxmoc/aniworld-cli/releases/latest"><img src="https://img.shields.io/github/v/release/dxmoc/aniworld-cli" alt="release"></a>
+  <img src="https://img.shields.io/badge/python-3.9%2B-blue" alt="Python 3.9+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-green" alt="GPL-3.0-or-later"></a>
+</p>
 
----
-
-## Contents
-
-- [Features](#features)
-- [Quick start](#quick-start)
-- [1 · Install mpv](#1--install-mpv)
-- [2 · Set up the project](#2--set-up-the-project)
-- [3 · Run the tests](#3--run-the-tests)
-- [4 · Usage](#4--usage)
-- [Arguments & environment variables](#arguments--environment-variables)
-- [Troubleshooting](#troubleshooting)
-- [Legal](#legal)
-
----
+<p align="center"><img src="docs/demo.gif" alt="aniworld-cli demo" width="800"></p>
 
 ## Features
 
-- Search via aniworld.to's AJAX endpoint
-- Pick **series → season (incl. movies) → episode** in **fzf menus that look
-  like ani-cli's**: type to filter, arrow keys to move. fzf ships inside the
-  `iterfzf` dependency, nothing extra to install.
-- **Per-episode language/subtitle selection**: when an episode offers more
-  than one language (e.g. German Dub / German Sub / Eng Sub) a menu appears, and
-  your choice is remembered for the next episodes. With `--lang` or `--no-menu`
-  the configured priority order is used automatically instead.
-- Hoster fallback by priority – currently verified working: **VOE** and
-  **Vidmoly** (see [hoster status](#hoster-status) for the rest). Each resolved
-  stream is **liveness-checked**, so a hoster that hands out dead (403) segments
-  is skipped automatically instead of stalling the player.
-- ani-cli style `next / replay / previous / select / quit` menu after playback
-- **Resume**: your last-watched episode per series is remembered, and picking
-  that series again offers to continue with the **next** episode (into the next
-  season when one ends), like ani-cli's history
-- **Watchlist** (`--watchlist` / `-w`): jump straight into a previously watched
-  series without searching; `-w --no-menu` continues the most recent one
-- **Binge mode** (`--auto`): auto-advance to the next episode until the season ends
-- mpv shows the episode name (`Series – S03E12`) instead of the raw CDN URL
-- `--debug` resolves the final stream URL without launching mpv
+- **fzf menus like ani-cli**: type to filter, arrows to move, Enter to pick.
+  fzf ships with the `iterfzf` dependency, there is nothing extra to install.
+- **Series, season (including movies), episode**, then a language menu when an
+  episode offers more than one (German dub, German subtitles, English
+  subtitles). Your language choice carries over to the next episodes.
+- **After playback**: `next`, `replay`, `previous`, `select`, `quit`, just like ani-cli.
+- **Resume**: picking a series again offers to continue with the episode after
+  the one you watched last, into the next season when one ends.
+- **Watchlist** (`-w`): jump back into a series you watched without searching.
+- **Binge mode** (`--auto`): plays the next episode automatically until the season ends.
+- **Hoster fallback**: tries VOE, then Vidmoly. Every stream is checked before
+  mpv starts, so a hoster that hands out dead (403) segments is skipped instead
+  of stalling the player.
+- **mpv only**: streaming, no downloads. mpv shows `Series – S01E03` as the title.
 
----
+## Install
 
-## Quick start
+You need **Python 3.9+** and **[mpv](https://mpv.io/)** on your `PATH`.
+
+### 1. aniworld-cli
+
+With [pipx](https://pipx.pypa.io/) (recommended, keeps it in its own environment):
 
 ```bash
-# 1. Install mpv (see per-OS instructions below)
-# 2. Get the repo
-git clone https://github.com/dxmoc/aniworld-cli.git
-cd aniworld-cli
-
-# 3. Virtual environment + dependencies
-python -m venv .venv
-# Linux/macOS/WSL:
-source .venv/bin/activate
-# Windows PowerShell:
-#   .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-
-# 4. Run
-python -m aniworld_cli "naruto"
+pipx install git+https://github.com/dxmoc/aniworld-cli
 ```
 
----
-
-## 1 · Install mpv
-
-aniworld-cli plays exclusively through **[mpv](https://mpv.io/)**. mpv must be on
-your `PATH` (or passed via `--player <path>`).
-
-### Linux
-
-| Distribution      | Command                          |
-|-------------------|----------------------------------|
-| Arch / Manjaro    | `sudo pacman -S mpv`            |
-| Debian / Ubuntu   | `sudo apt install mpv`          |
-| Fedora            | `sudo dnf install mpv`          |
-
-### Windows (PowerShell)
-
-```powershell
-winget install --id shinchiro.mpv
-# or:
-scoop install mpv
-```
-
-> The `shinchiro.mpv` package does **not** add mpv to your `PATH` automatically.
-> Either add its folder (e.g. `C:\Program Files\MPV Player`) to your user `PATH`,
-> open a **new** terminal, or pass `--player "C:\Program Files\MPV Player\mpv.exe"`.
-> Verify with `mpv --version`.
-
-### WSL (Ubuntu on Windows)
+With pip (or install a wheel from the [releases page](https://github.com/dxmoc/aniworld-cli/releases/latest)):
 
 ```bash
-sudo apt update && sudo apt install mpv
+pip install git+https://github.com/dxmoc/aniworld-cli
 ```
 
-> Without a GUI setup, mpv won't open a window in WSL. Use `--debug` to just
-> resolve the URL, or a WSLg-capable Windows 11 for real playback.
-
-**Check:**
+With Nix (flakes enabled; mpv and fzf come along):
 
 ```bash
-mpv --version
+nix run github:dxmoc/aniworld-cli
 ```
 
----
+### 2. mpv
 
-## 2 · Set up the project
+| System | Command |
+|---|---|
+| Arch / Manjaro | `sudo pacman -S mpv` |
+| Debian / Ubuntu / WSL | `sudo apt install mpv` |
+| Fedora | `sudo dnf install mpv` |
+| Windows (Scoop) | `scoop bucket add extras` then `scoop install mpv` |
+| Windows (winget) | `winget install --id shinchiro.mpv` |
 
-Requires **Python 3.9+** and **git**.
+After installing on Windows, open a **new** terminal so the updated `PATH`
+applies. The winget package does not add mpv to `PATH` by itself: add its folder
+(e.g. `C:\Program Files\MPV Player`) or pass `--player "C:\Program Files\MPV Player\mpv.exe"`.
+Check with `mpv --version`.
 
-<details>
-<summary><b>Linux / macOS / WSL</b></summary>
+Tested in CI on Linux (Python 3.9 to 3.14) and Windows (3.9 and 3.14, mpv from
+Scoop). macOS should work but is untested. In WSL, mpv needs a GUI backend
+(WSLg on Windows 11) to open a window.
+
+## Usage
 
 ```bash
-git clone https://github.com/dxmoc/aniworld-cli.git
-cd aniworld-cli
-
-python3 -m venv .venv
-source .venv/bin/activate
-
-pip install -r requirements.txt
-```
-</details>
-
-<details open>
-<summary><b>Windows PowerShell</b></summary>
-
-```powershell
-git clone https://github.com/dxmoc/aniworld-cli.git
-cd aniworld-cli
-
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-
-pip install -r requirements.txt
+aniworld-cli                       # asks for a search term
+aniworld-cli "frieren"             # search, then pick series, season, episode
+aniworld-cli -w                    # pick from series you watched before
+aniworld-cli "frieren" --auto      # binge the season
+aniworld-cli "frieren" --lang eng-sub
+aniworld-cli "frieren" --no-menu --episode 1-3   # straight to S01E03
+aniworld-cli -w --no-menu          # continue the most recent series
 ```
 
-> If activation fails with "running scripts is disabled on this system":
-> ```powershell
-> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-> ```
-> (applies to the current session only).
-</details>
+### Keys in the menus
 
-Optional, as a system-wide `aniworld-cli` command:
+| Key | Action |
+|---|---|
+| typing | filter the list (fuzzy, like fzf) |
+| Up / Down, Ctrl-K / Ctrl-J | move (wraps around) |
+| Enter | pick |
+| Esc, Ctrl-C | abort (in the menu after playback: quit) |
 
-```bash
-pip install -e .
-```
+Menus with a single entry, such as a series with one season, are skipped.
 
----
+### Options
 
-## 3 · Run the tests
-
-The parsers are tested **offline** against saved HTML/JSON samples in
-`tests/fixtures/` – no network needed, fast and deterministic.
-
-```bash
-pip install pytest
-python -m pytest -q
-```
-
-Expected: all tests green (`… passed`).
-
-**Manual smoke test with real network** (resolves the final stream URL without
-launching mpv):
-
-```bash
-python -m aniworld_cli "naruto" --episode 1-1 --debug
-```
-
-Prints a `…/master.m3u8` URL plus headers when everything works.
-
----
-
-## 4 · Usage
-
-```bash
-# Interactive (asks for a search term):
-python -m aniworld_cli
-
-# With a search term – guides you through series/season/episode:
-python -m aniworld_cli "naruto"
-
-# Jump straight to one episode without menus (season-episode; 0-N = movies):
-python -m aniworld_cli "naruto" --no-menu --episode 1-1
-
-# Prefer English subtitles:
-python -m aniworld_cli "one piece" --lang eng-sub
-
-# Binge a whole season – auto-advance until it ends:
-python -m aniworld_cli "naruto" --auto
-
-# Continue a previously watched series without searching:
-python -m aniworld_cli --watchlist
-
-# Custom mpv path (if not on PATH):
-python -m aniworld_cli "naruto" --player "C:\Program Files\MPV Player\mpv.exe"
-```
-
-After playback you get a **Next episode / Other episode / Quit** menu. Your last
-episode per series is remembered, so picking it again offers to **resume**.
-
----
-
-## Arguments & environment variables
-
-| Argument          | Meaning                                                          |
-|-------------------|------------------------------------------------------------------|
-| `query`           | Search term (optional; prompted otherwise)                       |
-| `--lang`          | Language priority, e.g. `ger-dub,ger-sub,eng-sub`                |
-| `--hoster`        | Hoster priority, comma-separated                                 |
-| `--episode S-E`   | Pick a season-episode directly, e.g. `1-3` (or `0-1` for movies) |
-| `--no-menu`       | Use arguments only, no interactive menus                         |
-| `--auto`          | Binge mode: auto-advance to the next episode until the season ends |
-| `--watchlist`, `-w` | Pick from previously watched series instead of searching       |
-| `--player <path>` | Path to mpv (otherwise taken from `PATH`)                        |
-| `--debug`         | Print stream URL + headers, do not launch mpv                    |
-| `--version`       | Show the version                                                 |
-
-The same settings via environment variables:
-
-| Variable            | Effect                                          |
-|---------------------|-------------------------------------------------|
-| `ANIWORLD_LANG`     | Language priority (like `--lang`)               |
-| `ANIWORLD_HOSTER`   | Hoster priority (like `--hoster`)               |
-| `ANIWORLD_BASE_URL` | Override the base URL                           |
-| `ANIWORLD_UA`       | Custom User-Agent                               |
-| `ANIWORLD_STATE_DIR`| Where resume/watchlist state is stored (default: OS config dir) |
+| Option | Meaning |
+|---|---|
+| `query` | search term (asked for if missing) |
+| `-w`, `--watchlist` | pick from series you watched before instead of searching |
+| `--episode S-E` | pick season and episode directly, e.g. `1-3` (`0-1` = first movie) |
+| `--no-menu` | no interactive menus, use arguments and defaults only |
+| `--auto` | play the next episode automatically until the season ends |
+| `--lang LIST` | language priority, e.g. `ger-dub,ger-sub,eng-sub` |
+| `--hoster LIST` | hoster priority, comma-separated, e.g. `Vidmoly,VOE` |
+| `--player PATH` | path to mpv (default: from `PATH`) |
+| `--debug` | print the stream URL and headers instead of starting mpv; shows full tracebacks |
+| `--version` | print the version |
 
 Language tokens: `ger-dub` (German dub), `ger-sub` (German subtitles),
-`eng-sub` (English subtitles).
+`eng-sub` (English subtitles). Default order: `ger-dub,ger-sub,eng-sub`.
 
----
+### Environment variables
+
+| Variable | Effect |
+|---|---|
+| `ANIWORLD_LANG` | language priority, like `--lang` |
+| `ANIWORLD_HOSTER` | hoster priority, like `--hoster` |
+| `ANIWORLD_STATE_DIR` | where resume and watchlist data is stored |
+| `ANIWORLD_BASE_URL` | override the site URL |
+| `ANIWORLD_UA` | custom User-Agent |
+
+Resume and watchlist data lives in `state.json` under `%APPDATA%\aniworld-cli`
+on Windows and `~/.config/aniworld-cli` (or `$XDG_CONFIG_HOME`) elsewhere.
 
 ## Troubleshooting
 
-| Symptom | Cause / fix |
-|---------|-------------|
-| `mpv not found!` | Install mpv (see [step 1](#1--install-mpv)) or use `--player <path>`. |
-| Cloudflare / anti-bot message | The site is blocking bots. An **external** [`flaresolverr`](https://github.com/FlareSolverr/FlareSolverr) service can help (not bundled). |
-| `No hoster returned a playable stream!` | Hosters temporarily unavailable; retry later or pick another title/episode. |
-| Garbled characters in the console | UTF-8 is forced automatically; on old Windows consoles `chcp 65001` helps. |
-| Playback won't start in WSL | No GUI backend – use `--debug`, or WSLg (Windows 11). |
-
-The `--debug` flag also shows full tracebacks instead of a short
-message, which helps when reporting issues.
-
----
+| Message or symptom | Fix |
+|---|---|
+| `mpv not found!` | Install mpv (see above) or pass `--player <path>`. |
+| `fzf not found!` | Only happens when installed from source without the bundled fzf. Install fzf or use the release wheel. |
+| `No hoster returned a playable stream!` | The hosters are down for this episode. Try again later or pick another language with `--lang`. |
+| Cloudflare message | The site is blocking automated access. An external [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) service can help (not included). |
+| Garbled characters on Windows | UTF-8 is forced automatically; on old consoles `chcp 65001` helps. |
+| No mpv window in WSL | WSL needs a GUI backend (WSLg on Windows 11). `--debug` still resolves the URL. |
 
 ## Hoster status
 
-aniworld.to changes hosters and their embed markup regularly, so extractor
-health drifts over time. Last checked **2026-10-21**:
+aniworld.to changes hosters and their embed pages regularly. Last checked **2026-10-21**:
 
-| Hoster      | Status                                                                |
-|-------------|-----------------------------------------------------------------------|
-| VOE         | ✅ working                                                             |
-| Vidmoly     | ✅ working                                                             |
-| Doodstream  | ❌ removed – embed now behind a Cloudflare Turnstile CAPTCHA           |
-| Filemoon    | ❌ removed – no longer resolving without a headless browser           |
-| Vidoza      | ❌ removed – no longer offered by the site                            |
-| SpeedFiles  | ❌ removed – no longer offered by the site                            |
-| Streamtape  | ❌ removed – no longer offered by the site                            |
+| Hoster | Status |
+|---|---|
+| VOE | working |
+| Vidmoly | working |
+| Doodstream | removed, embed is behind a Cloudflare Turnstile CAPTCHA |
+| Filemoon | removed, needs a headless browser |
+| Vidoza, SpeedFiles, Streamtape | removed, no longer offered by the site |
 
-Only **VOE** and **Vidmoly** ship with a working extractor; in a live survey they
-cover every episode tried, so the removed hosters cost no real coverage. Adding
-one back is a matter of dropping a new module into `aniworld_cli/extractors/` and
-registering it — see the extractor contract in that package's `__init__.py`.
+VOE and Vidmoly covered every episode in a live survey, so the removed hosters
+cost no real coverage. A new hoster is one module in `aniworld_cli/extractors/`,
+see the extractor contract in that package's `__init__.py`.
 
-## For developers
+## Development
 
-- aniworld.to changes its markup and hosters regularly. Extractors are verified
-  against the **live** site; when needed, save fresh samples into
-  `tests/fixtures/` and adjust the parsers.
-- Architecture: `search.py` → `series.py`/`episode.py` → `resolve.py` →
-  `extractors/<hoster>.py` → `player.py`. All on-screen strings live in `i18n.py`.
+```bash
+git clone https://github.com/dxmoc/aniworld-cli.git
+cd aniworld-cli
+python -m venv .venv && source .venv/bin/activate   # Windows: .\.venv\Scripts\Activate.ps1
+pip install -e . pytest
+python -m pytest -q
+```
 
----
+The tests run offline against saved pages in `tests/fixtures/`. For a live check
+without starting mpv: `aniworld-cli "naruto" --no-menu --episode 1-1 --debug`
+should print a `master.m3u8` URL.
 
-## Legal
+Code path: `search.py` -> `series.py` / `episode.py` -> `resolve.py` ->
+`extractors/<hoster>.py` -> `player.py`. Menus live in `cli.py`, all on-screen
+text in `i18n.py`.
 
-License: **GNU GPL v3.0 or later** – see [LICENSE](LICENSE).
+## Credits and license
+
+aniworld-cli is a derivative work of [ani-cli](https://github.com/pystardust/ani-cli)
+by pystardust and contributors (GPL-3.0). Changes from the original: rewritten in
+Python, ported to aniworld.to, season/episode/language menus, resume and
+watchlist, binge mode, liveness-checked hoster fallback.
+
+Licensed under the **GNU GPL v3.0 or later**, see [LICENSE](LICENSE).
 Copyright © 2026 dxmoc.
 
-This is a pure **client-side access tool**; it hosts no content itself. The user
-is solely responsible for lawful use.
-
-## License & Attribution
-
-This project is a derivative work of [ani-cli](https://github.com/pystardust/ani-cli)
-by pystardust and contributors, originally written in shell.
-
-ani-cli is licensed under the GNU General Public License v3.0.
-In accordance with GPL v3, this project is also distributed under the
-GNU General Public License v3.0.
-
-A copy of the license is included in this repository: [LICENSE](./LICENSE)
-
-Changes made to the original work:
-- Rewritten in Python
-- Ported from generic anime-streaming sites to aniworld.to specifically
-- Added season, episode and language menus for aniworld.to (fzf, like ani-cli)
-- Added resume state and a watchlist
-- Added binge/auto-advance mode
-- Added liveness-checked hoster fallback (VOE, Vidmoly)
+This is a client-side access tool and hosts no content. You are responsible for
+using it lawfully.

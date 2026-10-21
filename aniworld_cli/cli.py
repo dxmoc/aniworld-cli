@@ -340,10 +340,12 @@ def _choose_language(hosters, args: argparse.Namespace, remembered: str | None) 
         return remembered
     if len(langs) == 1:
         return langs[0]
-    return _select(  # type: ignore[return-value]
-        i18n.t("choose_language"),
-        [(_lang_label(lang), lang) for lang in langs],
-    )
+    picked = _select(i18n.t("choose_language"), [(_lang_label(lang), lang) for lang in langs])
+    # fzf's screen switch overwrote the cursor _playback_loop saved. Wipe the two
+    # status lines above ("Playing ...", "Loading hosters...") and save it again.
+    if sys.stdout.isatty():
+        print("\033[2A\033[J\0337", end="", flush=True)
+    return picked  # type: ignore[return-value]
 
 
 def _playback_loop(series: Series, nav: Nav, args: argparse.Namespace) -> int:
