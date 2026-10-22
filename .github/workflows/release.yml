@@ -87,7 +87,14 @@ jobs:
           Get-ChildItem "$dir\mpv" | Format-Table Name, Length
           Write-Host "--- mpv.exe testsrc"; Measure-Command { & "$dir\mpv\mpv.exe" --no-terminal --end=2 av://lavfi:testsrc | Out-Default } | Select-Object TotalSeconds
           Write-Host "--- mpv.com testsrc"; Measure-Command { & "$dir\mpv\mpv.com" --end=2 av://lavfi:testsrc | Out-Default } | Select-Object TotalSeconds
-          Write-Host "--- resolve only"; & "$dir\aniworld-cli.exe" frieren --no-menu --episode 1-1 --debug
+          $dbg = & "$dir\aniworld-cli.exe" frieren --no-menu --episode 1-1 --debug
+          $dbg
+          $url = ($dbg | Select-String 'Stream URL: (\S+)').Matches[0].Groups[1].Value
+          $ref = ($dbg | Select-String "'Referer': '([^']+)'").Matches[0].Groups[1].Value
+          Write-Host "--- bundled mpv.exe directly on the stream"
+          $p = Start-Process "$dir\mpv\mpv.exe" -ArgumentList '--no-terminal', "`"--http-header-fields=Referer: $ref`"", "`"$url`"" -PassThru
+          if ($p.WaitForExit(60000)) { Write-Host "exit $($p.ExitCode)" } else { Write-Host 'HANG'; $p.Kill() }
+          Write-Host "--- via aniworld-cli.exe"
           & "$dir\aniworld-cli.exe" frieren --no-menu --episode 1-1
           if ($LASTEXITCODE -ne 0) { throw "exit code $LASTEXITCODE" }
 

@@ -84,5 +84,16 @@ def play(stream: Stream, mpv_path: str | None = None, title: str | None = None) 
     if not resolved:
         raise PlayerNotFound(install_hint())
     cmd = build_command(resolved, stream, title)
-    proc = subprocess.run(cmd)  # noqa: S603 - argv list, no shell
+    frozen_windows = getattr(sys, "frozen", False) and sys.platform == "win32"
+    if frozen_windows:
+        # The PyInstaller bootloader points the DLL search path at its _internal
+        # folder, and child processes inherit it; mpv must not load DLLs from there.
+        import ctypes
+
+        ctypes.windll.kernel32.SetDllDirectoryW(None)
+    try:
+        proc = subprocess.run(cmd)  # noqa: S603 - argv list, no shell
+    finally:
+        if frozen_windows:
+            ctypes.windll.kernel32.SetDllDirectoryW(sys._MEIPASS)
     return proc.returncode
