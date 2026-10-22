@@ -79,10 +79,15 @@ jobs:
       - name: Live playback with the bundled mpv, 5 s without window
         # aniworld.to may block GitHub's IP ranges, which says nothing about the code.
         continue-on-error: true
+        timeout-minutes: 4
         run: |
           $dir = Join-Path $env:LOCALAPPDATA 'aniworld-cli'
           New-Item -ItemType Directory -Force "$dir\mpv\portable_config" | Out-Null
           "vo=null`nao=null`nend=5" | Out-File -Encoding ascii "$dir\mpv\portable_config\mpv.conf"
+          Get-ChildItem "$dir\mpv" | Format-Table Name, Length
+          Write-Host "--- mpv.exe testsrc"; Measure-Command { & "$dir\mpv\mpv.exe" --no-terminal --end=2 av://lavfi:testsrc | Out-Default } | Select-Object TotalSeconds
+          Write-Host "--- mpv.com testsrc"; Measure-Command { & "$dir\mpv\mpv.com" --end=2 av://lavfi:testsrc | Out-Default } | Select-Object TotalSeconds
+          Write-Host "--- resolve only"; & "$dir\aniworld-cli.exe" frieren --no-menu --episode 1-1 --debug
           & "$dir\aniworld-cli.exe" frieren --no-menu --episode 1-1
           if ($LASTEXITCODE -ne 0) { throw "exit code $LASTEXITCODE" }
 
