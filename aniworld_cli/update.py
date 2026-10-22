@@ -16,6 +16,7 @@ import requests
 from . import __version__, i18n
 from .state import _state_dir
 
+RAW_URL = "https://raw.githubusercontent.com/dxmoc/aniworld-cli/main"
 LATEST_URL = "https://api.github.com/repos/dxmoc/aniworld-cli/releases/latest"
 CHECK_EVERY = 24 * 60 * 60  # seconds
 TIMEOUT = 2.0
@@ -62,13 +63,18 @@ def latest_version(now: float | None = None) -> str | None:
 
 
 def _upgrade_command(tag: str) -> str:
-    """Reinstall from the release tag; installs from git never move on their own.
+    """Rerun the installer that was used, or reinstall from the release tag.
 
     ``pipx upgrade`` keeps a git install unchanged, and the package is not on
     PyPI, so both commands point straight at the tag.
     """
+    prefix = sys.prefix.replace("\\", "/")
+    if getattr(sys, "frozen", False):
+        return f"irm {RAW_URL}/install.ps1 | iex"
+    if prefix.endswith("aniworld-cli/venv"):
+        return f"curl -fsSL {RAW_URL}/install.sh | bash"
     source = f"git+https://github.com/dxmoc/aniworld-cli@{tag}"
-    if "pipx" in sys.prefix.replace("\\", "/"):
+    if "pipx" in prefix:
         return f"pipx install --force {source}"
     return f"pip install -U {source}"
 

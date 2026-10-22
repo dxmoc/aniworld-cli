@@ -62,3 +62,13 @@ def test_model_labels():
     assert series.display == "Naruto"
     h = Hoster(name="VOE", lang_key=1, lang="ger-dub", redirect_url="/redirect/1")
     assert h.name == "VOE"
+
+
+def test_frozen_build_prefers_bundled_mpv(monkeypatch, tmp_path):
+    (tmp_path / "mpv").mkdir()
+    (tmp_path / "mpv" / "mpv.exe").write_bytes(b"")
+    monkeypatch.setattr(player.sys, "executable", str(tmp_path / "aniworld-cli.exe"))
+    monkeypatch.setattr(player.shutil, "which", lambda name: None)
+    assert player.find_mpv() is None  # not frozen: only PATH counts
+    monkeypatch.setattr(player.sys, "frozen", True, raising=False)
+    assert player.find_mpv() == str(tmp_path / "mpv" / "mpv.exe")

@@ -53,5 +53,10 @@ def test_upgrade_command_matches_install(monkeypatch):
     monkeypatch.setattr(update, "_fetch_latest", lambda: "v9.0.0")
     monkeypatch.setattr(update.sys, "prefix", "/home/u/.local/share/pipx/venvs/aniworld-cli")
     assert "pipx install --force git+https://github.com/dxmoc/aniworld-cli@v9.0.0" in update.update_notice("0.2.3")
+    monkeypatch.setattr(update.sys, "prefix", "/home/u/.local/share/aniworld-cli/venv")
+    assert "install.sh | bash" in update.update_notice("0.2.3")
+    monkeypatch.setattr(update.sys, "frozen", True, raising=False)
+    assert "install.ps1 | iex" in update.update_notice("0.2.3")
+    monkeypatch.delattr(update.sys, "frozen")
     monkeypatch.setattr(update.sys, "prefix", "/nix/store/abc-python3")
     assert update.update_notice("0.2.3") is None

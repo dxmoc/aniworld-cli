@@ -35,9 +35,34 @@
 
 ## Install
 
+### Quick install
+
+**Linux** (installs mpv with your package manager, asks for `sudo`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dxmoc/aniworld-cli/main/install.sh | bash
+```
+
+**Windows** (PowerShell, no Python needed, mpv is included):
+
+```powershell
+irm https://raw.githubusercontent.com/dxmoc/aniworld-cli/main/install.ps1 | iex
+```
+
+Run the same command again to update. The Linux script supports apt, dnf,
+pacman and zypper and installs into `~/.local/share/aniworld-cli`. The Windows
+script unpacks `aniworld-cli-windows.zip` from the latest release (aniworld-cli
+with Python and mpv) to `%LOCALAPPDATA%\aniworld-cli` and adds it to your `PATH`.
+Windows may warn about an unknown publisher because the exe is not signed.
+
+To uninstall, delete `~/.local/share/aniworld-cli` and `~/.local/bin/aniworld-cli`
+on Linux, or `%LOCALAPPDATA%\aniworld-cli` and its `PATH` entry on Windows.
+
+### Manual install
+
 You need **Python 3.9+** and **[mpv](https://mpv.io/)** on your `PATH`.
 
-### 1. aniworld-cli
+#### 1. aniworld-cli
 
 With [pipx](https://pipx.pypa.io/) (recommended, keeps it in its own environment):
 
@@ -64,7 +89,7 @@ re-fetch installs from git; aniworld-cli is not on PyPI):
 pipx install --force git+https://github.com/dxmoc/aniworld-cli
 ```
 
-### 2. mpv
+#### 2. mpv
 
 | System | Command |
 |---|---|
@@ -117,7 +142,7 @@ Menus with a single entry, such as a series with one season, are skipped.
 | `--auto` | play the next episode automatically until the season ends |
 | `--lang LIST` | language priority, e.g. `ger-dub,ger-sub,eng-sub` |
 | `--hoster LIST` | hoster priority, comma-separated, e.g. `Vidmoly,VOE` |
-| `--player PATH` | path to mpv (default: from `PATH`) |
+| `--player PATH` | path to mpv (default: the bundled mpv on Windows, otherwise from `PATH`) |
 | `--debug` | print the stream URL and headers instead of starting mpv; shows full tracebacks |
 | `--version` | print the version |
 

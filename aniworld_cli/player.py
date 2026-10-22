@@ -5,6 +5,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 from . import i18n
 from .models import Stream
@@ -19,7 +20,15 @@ def find_mpv(explicit: str | None = None) -> str | None:
     if explicit:
         # Accept an absolute/relative path or a name resolvable on PATH.
         return shutil.which(explicit) or (explicit if _looks_executable(explicit) else None)
-    return shutil.which("mpv")
+    return _bundled_mpv() or shutil.which("mpv")
+
+
+def _bundled_mpv() -> str | None:
+    """mpv shipped in the Windows release zip, in a folder next to aniworld-cli.exe."""
+    if not getattr(sys, "frozen", False):
+        return None
+    exe = Path(sys.executable).parent / "mpv" / "mpv.exe"
+    return str(exe) if exe.is_file() else None
 
 
 def _looks_executable(path: str) -> bool:
