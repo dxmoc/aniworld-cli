@@ -58,7 +58,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = gh release view -R mpv-player/mpv --json tagName -q .tagName
+          # Pinned: a new mpv only ships after its live playback was checked here.
+          $tag = 'v0.41.0'
           gh release download $tag -R mpv-player/mpv --pattern "mpv-*-x86_64-pc-windows-msvc.zip" --output mpv.zip
           Expand-Archive mpv.zip dist\aniworld-cli\mpv
           Remove-Item dist\aniworld-cli\mpv\mpv.pdb  # 230 MB of debug symbols
