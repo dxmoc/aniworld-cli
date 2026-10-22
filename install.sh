@@ -84,7 +84,8 @@ main() {
 
     case ":$PATH:" in
         *":$BIN_DIR:"*) say "Start it with: aniworld-cli" ;;
-        *) say "Add $BIN_DIR to your PATH (e.g. in ~/.profile), then start it with: aniworld-cli" ;;
+        # Most distros put ~/.local/bin on PATH at login once it exists.
+        *) say "Log out and back in, then start it with: aniworld-cli (still not found? add $BIN_DIR to your PATH)" ;;
     esac
 }
 
