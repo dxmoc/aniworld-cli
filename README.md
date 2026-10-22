@@ -12,7 +12,11 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-green" alt="GPL-3.0-or-later"></a>
 </p>
 
+<details>
+<summary><b>Demo</b> (click to expand)</summary>
+<br>
 <p align="center"><img src="docs/demo.gif" alt="aniworld-cli demo" width="800"></p>
+</details>
 
 ## Features
 
