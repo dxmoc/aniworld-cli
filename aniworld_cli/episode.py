@@ -45,7 +45,10 @@ def _classify_language(*texts: str) -> str:
 
 def parse_language_map(markup: str) -> dict[int, str]:
     """Discover the page's lang-key -> canonical-token mapping."""
-    soup = _soup(markup)
+    return _language_map(_soup(markup))
+
+
+def _language_map(soup: BeautifulSoup) -> dict[int, str]:
     box = soup.select_one(".changeLanguageBox")
     mapping: dict[int, str] = {}
     if not box:
@@ -66,7 +69,7 @@ def parse_hosters(markup: str, lang_map: dict[int, str] | None = None) -> list[H
     """Parse the hoster list, attaching the resolved language to each entry."""
     soup = _soup(markup)
     if lang_map is None:
-        lang_map = parse_language_map(markup)
+        lang_map = _language_map(soup)  # same tree: the page is parsed once
     hosters: list[Hoster] = []
     for li in soup.select("li[data-link-target][data-lang-key]"):
         target = li.get("data-link-target", "")
