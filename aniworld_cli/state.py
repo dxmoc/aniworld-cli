@@ -95,17 +95,3 @@ def list_entries() -> list[dict]:
     entries.sort(key=lambda e: e.get("updated", ""), reverse=True)
     return entries
 
-
-def list_series() -> list[Series]:
-    """Watched series as :class:`Series` objects, most recent first."""
-    return [
-        Series(title=e.get("title", e["slug"]), slug=e["slug"], url=e.get("url", ""))
-        for e in list_entries()
-    ]
-
-
-def remove(slug: str) -> None:
-    """Drop a series from the state (e.g. finished/unwanted)."""
-    data = load()
-    if data.get("series", {}).pop(slug, None) is not None:
-        save(data)

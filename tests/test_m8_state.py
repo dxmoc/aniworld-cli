@@ -67,20 +67,6 @@ def test_list_entries_ordered_by_recency():
     assert [e["slug"] for e in entries] == ["new", "old"]
 
 
-def test_list_series_returns_series_objects():
-    state.record(_series("one-piece"), _episode(1, 1))
-    series = state.list_series()
-    assert len(series) == 1
-    assert isinstance(series[0], Series)
-    assert series[0].slug == "one-piece"
-
-
-def test_remove_drops_series():
-    state.record(_series(), _episode(1, 1))
-    state.remove("naruto")
-    assert state.get_progress("naruto") is None
-
-
 def test_corrupt_file_is_treated_as_empty(_isolate_state):
     (_isolate_state / "state.json").write_text("{ not json", encoding="utf-8")
     assert state.load()["series"] == {}
