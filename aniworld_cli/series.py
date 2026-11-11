@@ -17,6 +17,7 @@ list. Films use ``/filme/film-<n>``; we model the films section as season 0.
 
 from __future__ import annotations
 
+import functools
 import html
 import re
 
@@ -28,6 +29,7 @@ from .models import Episode, Series
 FILMS_SEASON = 0
 
 
+@functools.lru_cache(maxsize=2)  # seasons and episodes are read off the same page
 def _soup(markup: str) -> BeautifulSoup:
     return BeautifulSoup(markup, "html.parser")
 
