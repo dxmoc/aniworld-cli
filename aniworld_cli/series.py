@@ -88,14 +88,32 @@ def parse_episodes(markup: str, slug: str, season: int) -> list[Episode]:
     return episodes
 
 
+# shortcut: pages are kept for the whole run, so an episode released while the
+# program is open only shows up after a restart; add an expiry if that matters.
+_pages: dict[str, str] = {}
+
+
+def _page(url: str) -> str:
+    """Fetch a series/season page once per run; the menus revisit the same pages."""
+    if url not in _pages:
+        resp = http.get(url)
+        if not resp.ok:
+            return resp.text
+        _pages[url] = resp.text
+    return _pages[url]
+
+
 def list_seasons(series: Series) -> list[int]:
-    """Fetch the series page and return its season numbers (0 == films)."""
-    resp = http.get(series.url)
-    return parse_seasons(resp.text, series.slug)
+    """Season numbers from the series page (0 == films)."""
+    return parse_seasons(_page(series.url), series.slug)
 
 
 def list_episodes(series: Series, season: int) -> list[Episode]:
-    """Fetch a season page and return its episodes."""
-    url = config.BASE_URL + season_path(series.slug, season)
-    resp = http.get(url)
-    return parse_episodes(resp.text, series.slug, season)
+    """Return a season's episodes, fetching its page unless already known."""
+    # The series page doubles as its first season's page: no second request then.
+    root = _pages.get(series.url)
+    episodes = parse_episodes(root, series.slug, season) if root else []
+    if not episodes:
+        url = config.BASE_URL + season_path(series.slug, season)
+        episodes = parse_episodes(_page(url), series.slug, season)
+    return episodes

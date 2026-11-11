@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aniworld_cli import config
+from aniworld_cli import config, series
 from aniworld_cli.episode import parse_hosters, parse_language_map
+from aniworld_cli.models import Series
 from aniworld_cli.series import parse_episodes, parse_seasons
 
 FIX = Path(__file__).parent / "fixtures"
@@ -38,6 +39,37 @@ def test_parse_episodes_films():
     assert all(e.season == 0 for e in eps)
     assert eps[0].url.endswith("/anime/stream/naruto/filme/film-1")
     assert eps[0].label.startswith("Film 1")
+
+
+def test_series_page_is_fetched_once_and_serves_its_first_season(monkeypatch):
+    fetched = []
+
+    class _Resp:
+        ok = True
+        text = _read("series_naruto.html")
+
+    monkeypatch.setattr(series, "_pages", {})
+    monkeypatch.setattr(series.http, "get", lambda url: fetched.append(url) or _Resp())
+    naruto = Series("Naruto", "naruto", config.BASE_URL + "/anime/stream/naruto")
+
+    assert series.list_seasons(naruto) == [0, 1, 2, 3, 4]
+    assert len(series.list_episodes(naruto, 1)) == 52
+    assert series.list_seasons(naruto) == [0, 1, 2, 3, 4]
+    assert fetched == [naruto.url]
+    # Any other season still needs its own page (the fake serves season 1 again).
+    assert series.list_episodes(naruto, 2) == []
+    assert fetched == [naruto.url, naruto.url + "/staffel-2"]
+
+
+def test_failed_page_is_not_cached(monkeypatch):
+    class _Resp:
+        ok = False
+        text = ""
+
+    monkeypatch.setattr(series, "_pages", {})
+    monkeypatch.setattr(series.http, "get", lambda _url: _Resp())
+    assert series.list_seasons(Series("Naruto", "naruto", "https://x/naruto")) == []
+    assert series._pages == {}
 
 
 def test_language_map_derived_not_hardcoded():
