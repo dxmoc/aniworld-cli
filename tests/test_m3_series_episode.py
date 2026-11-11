@@ -30,7 +30,7 @@ def test_parse_episodes_staffel_one():
     # strictly increasing, no dupes
     nums = [e.number for e in eps]
     assert nums == sorted(set(nums))
-    assert eps[0].label == "S01E01"
+    assert eps[0].label == "S01E01 – Wer ist Naruto?"
 
 
 def test_parse_episodes_films():
@@ -39,6 +39,20 @@ def test_parse_episodes_films():
     assert all(e.season == 0 for e in eps)
     assert eps[0].url.endswith("/anime/stream/naruto/filme/film-1")
     assert eps[0].label.startswith("Film 1")
+    # No German title: the original one is used; the site double-escapes entities.
+    assert eps[0].title == "Hidden Leaf Village Grand Sports Festival! [OVA]"
+    assert eps[1].title == "Geheimmission im Land des ewigen Schnees"
+    assert eps[5].title == "Naruto's ultimate heroes [OVA]"
+
+
+def test_parse_episodes_without_title_table_and_with_escape_codes():
+    nav = '<div id="stream"><a href="/anime/stream/x/staffel-1/episode-1">1</a></div>'
+    assert parse_episodes(nav, "x", 1)[0].title == ""
+    cell = (
+        '<table><tr><td class="seasonEpisodeTitle"><a href="/anime/stream/x/staffel-1/episode-1">'
+        "<strong> </strong><span>A\x1b[2J\n  B</span></a></td></tr></table>"
+    )
+    assert parse_episodes(nav + cell, "x", 1)[0].title == "A[2J B"
 
 
 def test_series_page_is_fetched_once_and_serves_its_first_season(monkeypatch):

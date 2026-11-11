@@ -7,12 +7,17 @@ Verified against the live site. The series/season pages carry a navigation block
   ``/anime/stream/<slug>/filme`` entry (films), and
 * an episode ``<ul>`` listing only the *currently active* season's episodes.
 
+Below it, ``<table class="seasonEpisodesList">`` repeats those episode links in
+``<td class="seasonEpisodeTitle">`` cells: ``<strong>`` holds the German title
+(empty when there is none), ``<span>`` the original one.
+
 So to enumerate a season we fetch that season's own page and read its episode
 list. Films use ``/filme/film-<n>``; we model the films section as season 0.
 """
 
 from __future__ import annotations
 
+import html
 import re
 
 from bs4 import BeautifulSoup
@@ -55,10 +60,21 @@ def parse_seasons(markup: str, slug: str) -> list[int]:
     return sorted(found)
 
 
+def _title(link) -> str:
+    """The site's main (German) episode title, else the original one."""
+    for node in link.find_all(["strong", "span"]):
+        text = html.unescape(" ".join(node.get_text().split()))
+        if text:
+            # Site text ends up on the terminal: keep escape sequences out.
+            return "".join(ch for ch in text if ch.isprintable())
+    return ""
+
+
 def parse_episodes(markup: str, slug: str, season: int) -> list[Episode]:
     """Episodes for ``season`` from that season page's nav block. Deduped."""
     soup = _soup(markup)
     nav = _nav(soup)
+    titles = {a["href"]: _title(a) for a in soup.select("td.seasonEpisodeTitle a[href]")}
     if season == FILMS_SEASON:
         pat = re.compile(rf"^/anime/stream/{re.escape(slug)}/filme/film-(\d+)/?$")
     else:
@@ -82,6 +98,7 @@ def parse_episodes(markup: str, slug: str, season: int) -> list[Episode]:
                 url=config.BASE_URL + a["href"],
                 season=season,
                 number=number,
+                title=titles.get(a["href"], ""),
             )
         )
     episodes.sort(key=lambda e: e.number)

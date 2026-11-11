@@ -25,6 +25,7 @@
 - **Series, season (including movies), episode**, then a language menu when an
   episode offers more than one (German dub, German subtitles, English
   subtitles). Your language choice carries over to the next episodes.
+  Episodes and movies are listed with their titles, so you can filter by name.
 - **After playback**: `next`, `replay`, `previous`, `select`, `quit`, just like ani-cli.
 - **Resume**: picking a series again offers to continue with the episode after
   the one you watched last, into the next season when one ends.
@@ -33,7 +34,7 @@
 - **Hoster fallback**: tries VOE, then Vidmoly. Every stream is checked before
   mpv starts, so a hoster that hands out dead (403) segments is skipped instead
   of stalling the player.
-- **mpv only**: streaming, no downloads. mpv shows `Series – S01E03` as the title.
+- **mpv only**: streaming, no downloads. mpv shows `Series – S01E03 – Episode title` as the title.
 - **Update hint**: once a day it checks GitHub for a newer release and prints
   the upgrade command (pipx or pip). Offline or rate-limited, it stays quiet.
 
