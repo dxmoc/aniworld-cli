@@ -148,6 +148,18 @@
         }
       );
 
+      # Runs tests/mpv/aniworld-anime4k_test.lua, which checks the shader chains
+      # and key bindings of mpv/aniworld-anime4k.lua without a player.
+      checks = forEachSupportedSystem (
+        { pkgs, ... }:
+        {
+          aniworld-anime4k-script = pkgs.runCommand "aniworld-anime4k-script-test" { nativeBuildInputs = [ pkgs.lua5_4 ]; } ''
+            lua ${./tests/mpv/aniworld-anime4k_test.lua} ${./mpv/aniworld-anime4k.lua}
+            touch $out
+          '';
+        }
+      );
+
       formatter = forEachSupportedSystem ({ pkgs, ... }: pkgs.nixfmt);
     };
 }

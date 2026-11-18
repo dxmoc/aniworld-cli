@@ -126,7 +126,7 @@ nix run github:dxmoc/aniworld-cli#aniworld-cli-anime4k
 |---|---|
 | `aniworld-cli` | the plain CLI, as before |
 | `aniworld-cli-anime4k` | the CLI bundled with the Anime4K-enabled mpv |
-| `mpv-anime4k` | mpv with Anime4K v4, ModernZ OSC, and Ctrl+1..Ctrl+6 mode bindings |
+| `mpv-anime4k` | mpv with Anime4K v4, ModernZ OSC, and a profile script (Ctrl+1..Ctrl+6, Ctrl+a menu) |
 | `anime4k-shaders` | the pinned Anime4K v4.0.1 shaders |
 
 With Home Manager:
@@ -169,13 +169,26 @@ Or system-wide on NixOS, with the same options (every user gets the CLI):
 
 The shaders in `nix/anime4k-shaders.nix` are pinned by content hash, so the build
 is reproducible and playback never needs the network. `mode` and `hq` choose the
-chain mpv starts with; Ctrl+1..Ctrl+6 switch modes on the fly, Ctrl+0 clears
-them. `programs.aniworld-cli.package` takes any aniworld-cli package if you want
-to swap in your own build.
+chain mpv starts with. `programs.aniworld-cli.package` takes any aniworld-cli
+package if you want to swap in your own build.
 
-The wrapper bakes in an `--input-conf`, so it replaces mpv's `input.conf`
-(mpv's built-in keys stay). If you already maintain your own mpv configuration,
-keep `anime4k.enable = false` and install just `aniworld-cli`.
+The switching itself is `mpv/aniworld-anime4k.lua`, loaded with `--script`, so no
+`input.conf` is generated and your own mpv keys keep working:
+
+| Key | Action |
+|---|---|
+| Ctrl+1 .. Ctrl+6 | profile A, B, C, A+A, B+B, C+A |
+| Ctrl+0 | Anime4K off |
+| Ctrl+a | OSD menu: profiles, off, HQ toggle |
+
+The script is plain mpv Lua and works outside Nix too: copy it to
+`~/.config/mpv/scripts/` and point `--script-opts=aniworld-anime4k-shaders_dir=...`
+at an Anime4K release's shader directory.
+
+ModernZ has no plugin API (it only accepts `osc-show`/`osc-hide`), so the
+Anime4K controls are keys and this OSD menu rather than a button in its
+control bar. If you already maintain your own mpv configuration, keep
+`anime4k.enable = false` and install just `aniworld-cli`.
 
 ## Usage
 

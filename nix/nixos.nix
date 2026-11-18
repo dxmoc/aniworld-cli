@@ -38,8 +38,8 @@ in
     anime4k = {
       enable = lib.mkEnableOption ''
         Anime4K v4 upscaling, bundled with an mpv wrapper (shaders from the Nix
-        store, Ctrl+1..Ctrl+6 to switch modes). Replaces mpv's input.conf, so do
-        not combine it with your own mpv key bindings
+        store, Ctrl+1..Ctrl+6 for the profiles and Ctrl+a for a menu, from the
+        bundled mpv/aniworld-anime4k.lua; your input.conf is left alone)
       '';
 
       mode = lib.mkOption {

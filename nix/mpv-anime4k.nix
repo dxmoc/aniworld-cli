@@ -1,11 +1,9 @@
 # mpv with Anime4K preinstalled, for people who do not (yet) have a custom mpv
-# setup. Unlike the CLI's --anime4k, nothing is downloaded or written at runtime:
-# the shader chain and the Ctrl+1..Ctrl+6 bindings are baked into the wrapper.
+# setup. Nothing is downloaded or written at runtime.
 #
-# Because mpv has no way to *append* a key binding file, the generated
-# input.conf replaces mpv's config directory input.conf (mpv's built-in keys
-# stay). If you already maintain one, skip this package and use the CLI's
-# --anime4k instead.
+# The keys and the profile menu come from the shipped Lua script, which changes
+# the shader chain at runtime, so no input.conf is generated or replaced and an
+# existing one keeps working.
 {
   lib,
   pkgs,
@@ -15,41 +13,25 @@
 }:
 let
   shaders = pkgs.callPackage ./anime4k-shaders.nix { };
-  modes = import ./anime4k-modes.nix { inherit lib; };
+  script = ../mpv/aniworld-anime4k.lua;
 
-  shaderPath = relative: "${shaders}/share/anime4k/shaders/${relative}";
-  chain = m: lib.concatMapStringsSep ":" shaderPath (modes.chain { mode = m; inherit hq; });
+  modes = [
+    "a"
+    "b"
+    "c"
+    "a+a"
+    "b+b"
+    "c+a"
+  ];
 
-  labels = {
-    a = "A (1080p)";
-    b = "B (720p)";
-    c = "C (480p)";
-    "a+a" = "A+A";
-    "b+b" = "B+B";
-    "c+a" = "C+A";
-  };
-  hotkeys = {
-    "CTRL+1" = "a";
-    "CTRL+2" = "b";
-    "CTRL+3" = "c";
-    "CTRL+4" = "a+a";
-    "CTRL+5" = "b+b";
-    "CTRL+6" = "c+a";
-  };
-
-  inputConf = pkgs.writeText "mpv-anime4k-input.conf" (
-    lib.concatStrings (
-      lib.mapAttrsToList (
-        key: m: ''
-          ${key} no-osd change-list glsl-shaders set "${chain m}"; show-text "Anime4K: ${labels.${m}}"
-        ''
-      ) hotkeys
-    )
-    + ''
-      CTRL+0 no-osd change-list glsl-shaders clr ""; show-text "Anime4K: off"
-    ''
-  );
+  scriptOpts = lib.concatStringsSep "," [
+    "aniworld-anime4k-shaders_dir=${shaders}/share/anime4k/shaders"
+    "aniworld-anime4k-mode=${mode}"
+    "aniworld-anime4k-hq=${if hq then "yes" else "no"}"
+  ];
 in
+assert lib.assertMsg (builtins.elem mode modes)
+  "Unknown Anime4K mode '${mode}'. Choose one of: ${lib.concatStringsSep ", " modes}.";
 pkgs.mpv.override {
   # ModernZ replaces the stock OSC, which is why osc=no is passed below.
   scripts = lib.optionals osc [ pkgs.mpvScripts.modernz ];
@@ -61,9 +43,9 @@ pkgs.mpv.override {
       "--add-flags"
       "--hwdec=auto-safe"
       "--add-flags"
-      "--input-conf=${inputConf}"
+      "--script=${script}"
       "--add-flags"
-      "--glsl-shaders=${chain mode}"
+      "--script-opts=${scriptOpts}"
     ]
     ++ lib.optionals osc [
       "--add-flags"

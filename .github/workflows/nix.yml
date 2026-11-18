@@ -27,15 +27,36 @@ jobs:
           .#mpv-anime4k
           .#aniworld-cli-anime4k
 
-      - name: The mpv wrapper carries the shaders and the bindings
+      - name: The mpv wrapper carries the shaders and the script
         run: |
           mpv="$(nix eval --raw .#mpv-anime4k.outPath)"
-          grep -q "share/anime4k/shaders/Upscale/Anime4K_Upscale_CNN_x2_M.glsl" "$mpv/bin/mpv"
-          conf="$(grep -o "input-conf=[^ '\"]*" "$mpv/bin/mpv" | head -1 | cut -d= -f2-)"
-          echo "input.conf: $conf"
-          test -f "$conf"
-          grep -q 'CTRL+1 no-osd change-list glsl-shaders set' "$conf"
-          grep -q 'CTRL+0 no-osd change-list glsl-shaders clr' "$conf"
+          grep -q "share/anime4k/shaders" "$mpv/bin/mpv"
+          grep -q "aniworld-anime4k-hq=no" "$mpv/bin/mpv"
+
+          script="$(grep -o "script=[^ '\"]*aniworld-anime4k.lua" "$mpv/bin/mpv" | head -1 | cut -d= -f2-)"
+          echo "script: $script"
+          test -f "$script"
+          grep -q 'Anime4K v4 profile switching' "$script"
+          grep -q 'Ctrl+a' "$script"
+
+          shaders="$(grep -o "shaders_dir=[^ '\",]*" "$mpv/bin/mpv" | head -1 | cut -d= -f2-)"
+          echo "shaders: $shaders"
+          test -f "$shaders/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+
+      - name: Every shader the script references is pinned
+        run: |
+          shaders="$(nix build --no-link --print-out-paths .#anime4k-shaders)"
+          nix run --quiet nixpkgs#lua5_4 -- tests/mpv/aniworld-anime4k_test.lua mpv/aniworld-anime4k.lua > out.txt
+          cat out.txt
+          referenced="$(sed -n 's/^SHADERS //p' out.txt | tr ' ' '\n')"
+          test -n "$referenced"
+          count=0
+          while read -r shader; do
+            test -f "$shaders/share/anime4k/shaders/$shader"
+            count=$((count + 1))
+          done <<< "$referenced"
+          test "$count" -eq 14
+          echo "all $count shaders the script can load are in the store"
 
       - name: The bundled mpv shadows the plain one
         run: |
