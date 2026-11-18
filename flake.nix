@@ -69,12 +69,24 @@
                 --suffix PATH : ${lib.makeBinPath [ pkgs.mpv pkgs.fzf ]}
             '';
           };
+
+          anime4k-shaders = pkgs.callPackage ./nix/anime4k-shaders.nix { };
+          mpv-anime4k = pkgs.callPackage ./nix/mpv-anime4k.nix { };
+          aniworld-cli-anime4k = pkgs.callPackage ./nix/aniworld-cli-anime4k.nix {
+            inherit aniworld-cli mpv-anime4k;
+          };
         in
         {
-          inherit aniworld-cli;
+          inherit aniworld-cli aniworld-cli-anime4k anime4k-shaders mpv-anime4k;
           default = aniworld-cli;
         }
       );
+
+      # `programs.aniworld-cli.anime4k.enable` bundles the Anime4K mpv wrapper.
+      homeManagerModules = {
+        default = import ./nix/home-manager.nix { inherit self; };
+        aniworld-cli = self.homeManagerModules.default;
+      };
 
       apps = forEachSupportedSystem (
         { pkgs, system }:

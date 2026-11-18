@@ -113,6 +113,51 @@ Tested in CI on Linux (Python 3.9 to 3.14) and Windows (3.9 and 3.14, mpv from
 Scoop). macOS should work but is untested. In WSL, mpv needs a GUI backend
 (WSLg on Windows 11) to open a window.
 
+## NixOS / Home Manager
+
+The flake also ships an Anime4K-enabled mpv, so NixOS users get upscaling with
+nothing downloaded or written to `~/.config/mpv` at play time:
+
+```bash
+nix run github:dxmoc/aniworld-cli#aniworld-cli-anime4k
+```
+
+| Flake output | What it is |
+|---|---|
+| `aniworld-cli` | the plain CLI, as before |
+| `aniworld-cli-anime4k` | the CLI bundled with the Anime4K-enabled mpv |
+| `mpv-anime4k` | mpv with Anime4K v4, ModernZ OSC, and Ctrl+1..Ctrl+6 mode bindings |
+| `anime4k-shaders` | the pinned Anime4K v4.0.1 shaders |
+
+With Home Manager:
+
+```nix
+{
+  inputs.aniworld-cli.url = "github:dxmoc/aniworld-cli";
+
+  imports = [ inputs.aniworld-cli.homeManagerModules.default ];
+
+  programs.aniworld-cli = {
+    enable = true;
+    anime4k = {
+      enable = true; # also installs the Anime4K-enabled mpv
+      mode = "a";    # a: 1080p, b: 720p, c: 480p, a+a, b+b, c+a
+      hq = false;    # true: larger VL/M shader variants, slower
+    };
+  };
+}
+```
+
+The shaders in `nix/anime4k-shaders.nix` are pinned by content hash, so the build
+is reproducible and playback never needs the network. `mode` and `hq` choose the
+chain mpv starts with; Ctrl+1..Ctrl+6 switch modes on the fly, Ctrl+0 clears
+them. `programs.aniworld-cli.package` takes any aniworld-cli package if you want
+to swap in your own build.
+
+The wrapper bakes in an `--input-conf`, so it replaces mpv's `input.conf`
+(mpv's built-in keys stay). If you already maintain your own mpv configuration,
+keep `anime4k.enable = false` and install just `aniworld-cli`.
+
 ## Usage
 
 ```bash
