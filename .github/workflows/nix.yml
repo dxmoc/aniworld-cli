@@ -1,0 +1,69 @@
+name: nix
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  flake:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v23
+
+      - name: Check the flake
+        run: nix flake check --print-build-logs --show-trace
+
+      - name: Build the Anime4K packages
+        run: >
+          nix build --print-build-logs
+          .#anime4k-shaders
+          .#mpv-anime4k
+          .#aniworld-cli-anime4k
+
+      - name: The mpv wrapper carries the shaders and the bindings
+        run: |
+          mpv="$(nix eval --raw .#mpv-anime4k.outPath)"
+          grep -q "share/anime4k/shaders/Upscale/Anime4K_Upscale_CNN_x2_M.glsl" "$mpv/bin/mpv"
+          conf="$(grep -o "input-conf=[^ '\"]*" "$mpv/bin/mpv" | head -1 | cut -d= -f2-)"
+          echo "input.conf: $conf"
+          test -f "$conf"
+          grep -q 'CTRL+1 no-osd change-list glsl-shaders set' "$conf"
+          grep -q 'CTRL+0 no-osd change-list glsl-shaders clr' "$conf"
+
+      - name: The bundled mpv shadows the plain one
+        run: |
+          nix build --print-build-logs .#aniworld-cli-anime4k -o result-cli
+          ./result-cli/bin/aniworld-cli --version
+          grep -q "$(nix eval --raw .#mpv-anime4k.outPath)/bin" result-cli/bin/aniworld-cli
+
+      - name: The NixOS module evaluates
+        run: |
+          nix eval --show-trace --impure --expr '
+            let
+              flake = builtins.getFlake (toString ./.);
+              nixos = flake.inputs.nixpkgs.lib.nixosSystem {
+                system = builtins.currentSystem;
+                modules = [
+                  flake.nixosModules.default
+                  {
+                    programs.aniworld-cli.enable = true;
+                    programs.aniworld-cli.anime4k.enable = true;
+                    programs.aniworld-cli.anime4k.mode = "c+a";
+                  }
+                ];
+              };
+            in
+            map (package: package.outPath) nixos.config.environment.systemPackages
+          '
+
+      - name: The Home Manager module evaluates
+        run: |
+          nix eval --show-trace --impure --apply builtins.typeOf \
+            --expr '(builtins.getFlake (toString ./.)).homeManagerModules.default'
