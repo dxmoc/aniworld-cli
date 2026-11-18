@@ -113,6 +113,83 @@ Tested in CI on Linux (Python 3.9 to 3.14) and Windows (3.9 and 3.14, mpv from
 Scoop). macOS should work but is untested. In WSL, mpv needs a GUI backend
 (WSLg on Windows 11) to open a window.
 
+## NixOS / Home Manager
+
+The flake also ships an Anime4K-enabled mpv, so NixOS users get upscaling with
+nothing downloaded or written to `~/.config/mpv` at play time:
+
+```bash
+nix run github:dxmoc/aniworld-cli#aniworld-cli-anime4k
+```
+
+| Flake output | What it is |
+|---|---|
+| `aniworld-cli` | the plain CLI, as before |
+| `aniworld-cli-anime4k` | the CLI bundled with the Anime4K-enabled mpv |
+| `mpv-anime4k` | mpv with Anime4K v4, ModernZ OSC, and a profile script (Ctrl+1..Ctrl+6, Ctrl+a menu) |
+| `anime4k-shaders` | the pinned Anime4K v4.0.1 shaders |
+
+With Home Manager:
+
+```nix
+{
+  inputs.aniworld-cli.url = "github:dxmoc/aniworld-cli";
+
+  imports = [ inputs.aniworld-cli.homeManagerModules.default ];
+
+  programs.aniworld-cli = {
+    enable = true;
+    anime4k = {
+      enable = true; # also installs the Anime4K-enabled mpv
+      mode = "a";    # a: 1080p, b: 720p, c: 480p, a+a, b+b, c+a
+      hq = false;    # true: larger VL/M shader variants, slower
+    };
+  };
+}
+```
+
+Or system-wide on NixOS, with the same options (every user gets the CLI):
+
+```nix
+{
+  inputs.aniworld-cli.url = "github:dxmoc/aniworld-cli";
+
+  imports = [ inputs.aniworld-cli.nixosModules.default ];
+
+  programs.aniworld-cli = {
+    enable = true;
+    anime4k = {
+      enable = true;
+      mode = "a";
+      hq = false;
+    };
+  };
+}
+```
+
+The shaders in `nix/anime4k-shaders.nix` are pinned by content hash, so the build
+is reproducible and playback never needs the network. `mode` and `hq` choose the
+chain mpv starts with. `programs.aniworld-cli.package` takes any aniworld-cli
+package if you want to swap in your own build.
+
+The switching itself is `mpv/aniworld-anime4k.lua`, loaded with `--script`, so no
+`input.conf` is generated and your own mpv keys keep working:
+
+| Key | Action |
+|---|---|
+| Ctrl+1 .. Ctrl+6 | profile A, B, C, A+A, B+B, C+A |
+| Ctrl+0 | Anime4K off |
+| Ctrl+a | OSD menu: profiles, off, HQ toggle |
+
+The script is plain mpv Lua and works outside Nix too: copy it to
+`~/.config/mpv/scripts/` and point `--script-opts=aniworld-anime4k-shaders_dir=...`
+at an Anime4K release's shader directory.
+
+ModernZ has no plugin API (it only accepts `osc-show`/`osc-hide`), so the
+Anime4K controls are keys and this OSD menu rather than a button in its
+control bar. If you already maintain your own mpv configuration, keep
+`anime4k.enable = false` and install just `aniworld-cli`.
+
 ## Usage
 
 ```bash
