@@ -17,15 +17,6 @@
 }:
 let
   cfg = config.programs.aniworld-cli;
-  packages = self.packages.${pkgs.system};
-
-  anime4kCli = pkgs.callPackage ./aniworld-cli-anime4k.nix {
-    aniworld-cli = packages.aniworld-cli;
-    mpvAnime4k = pkgs.callPackage ./mpv-anime4k.nix {
-      inherit (cfg.anime4k) hq;
-      mode = cfg.anime4k.mode;
-    };
-  };
 in
 {
   options.programs.aniworld-cli = {
@@ -33,7 +24,11 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = if cfg.anime4k.enable then anime4kCli else packages.aniworld-cli;
+      default = (import ./cli-package.nix { inherit self; }) {
+        inherit pkgs;
+        enable = cfg.anime4k.enable;
+        inherit (cfg.anime4k) mode hq;
+      };
       defaultText = lib.literalExpression "aniworld-cli, or its Anime4K bundle when anime4k.enable is set";
       description = "The aniworld-cli package to install.";
     };

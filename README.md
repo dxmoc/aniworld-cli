@@ -148,6 +148,25 @@ With Home Manager:
 }
 ```
 
+Or system-wide on NixOS, with the same options (every user gets the CLI):
+
+```nix
+{
+  inputs.aniworld-cli.url = "github:dxmoc/aniworld-cli";
+
+  imports = [ inputs.aniworld-cli.nixosModules.default ];
+
+  programs.aniworld-cli = {
+    enable = true;
+    anime4k = {
+      enable = true;
+      mode = "a";
+      hq = false;
+    };
+  };
+}
+```
+
 The shaders in `nix/anime4k-shaders.nix` are pinned by content hash, so the build
 is reproducible and playback never needs the network. `mode` and `hq` choose the
 chain mpv starts with; Ctrl+1..Ctrl+6 switch modes on the fly, Ctrl+0 clears

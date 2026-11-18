@@ -88,6 +88,12 @@
         aniworld-cli = self.homeManagerModules.default;
       };
 
+      # The same options, for a system-wide install on NixOS.
+      nixosModules = {
+        default = import ./nix/nixos.nix { inherit self; };
+        aniworld-cli = self.nixosModules.default;
+      };
+
       apps = forEachSupportedSystem (
         { pkgs, system }:
         {
