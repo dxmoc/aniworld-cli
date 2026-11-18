@@ -46,6 +46,15 @@ STRINGS: dict[str, str] = {
     ),
     "starting_player": "Starting mpv...",
     "player_failed": "mpv stopped with an error (exit code {}). Try another hoster with --hoster.",
+    # Anime4K
+    "anime4k_bad_mode": "Unknown Anime4K mode '{}'. Choose one of: {} (or 'off').",
+    "anime4k_downloading": "Downloading Anime4K shaders (first run only)...",
+    "anime4k_download_failed": (
+        "Could not download Anime4K shaders ({}). Playing without upscaling."
+    ),
+    "anime4k_already_configured": (
+        "Anime4K is already configured in mpv.conf, leaving your setup alone."
+    ),
     "fzf_missing": (
         "fzf not found! Install it ('sudo apt install fzf', 'scoop install fzf') "
         "or install aniworld-cli from the wheel, which ships fzf."

@@ -24,7 +24,8 @@ from .models import Episode, Series
 STATE_VERSION = 1
 
 
-def _state_dir() -> Path:
+def config_dir() -> Path:
+    """aniworld-cli's own config directory (also used for the shader cache)."""
     override = os.environ.get("ANIWORLD_STATE_DIR")
     if override:
         return Path(override)
@@ -33,6 +34,10 @@ def _state_dir() -> Path:
         return Path(base) / "aniworld-cli"
     base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
     return Path(base) / "aniworld-cli"
+
+
+def _state_dir() -> Path:
+    return config_dir()
 
 
 def _state_file() -> Path:

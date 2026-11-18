@@ -34,6 +34,9 @@
 - **Hoster fallback**: tries VOE, then Vidmoly. Every stream is checked before
   mpv starts, so a hoster that hands out dead (403) segments is skipped instead
   of stalling the player.
+- **Anime4K upscaling** (`--anime4k`): the shaders are fetched once and appended
+  to mpv's shader chain, so your own mpv setup keeps working. Without a custom
+  `input.conf` you also get Ctrl+1..Ctrl+6 to switch modes mid-episode.
 - **mpv only**: streaming, no downloads. mpv shows `Series – S01E03 – Episode title` as the title.
 - **Update hint**: once a day it checks GitHub for a newer release and prints
   the upgrade command (pipx or pip). Offline or rate-limited, it stays quiet.
@@ -148,6 +151,8 @@ Menus with a single entry, such as a series with one season, are skipped.
 | `--lang LIST` | language priority, e.g. `ger-dub,ger-sub,eng-sub` |
 | `--hoster LIST` | hoster priority, comma-separated, e.g. `Vidmoly,VOE` |
 | `--player PATH` | path to mpv (default: the bundled mpv on Windows, otherwise from `PATH`) |
+| `--anime4k [MODE]` | Anime4K upscaling: `a` (1080p, the default), `b` (720p), `c` (480p), `a+a`, `b+b`, `c+a`, `off` |
+| `--anime4k-hq` | slower, higher-quality Anime4K shader variants (strong GPU) |
 | `--debug` | print the stream URL and headers instead of starting mpv; shows full tracebacks |
 | `--version` | print the version |
 
@@ -160,12 +165,52 @@ Language tokens: `ger-dub` (German dub), `ger-sub` (German subtitles),
 |---|---|
 | `ANIWORLD_LANG` | language priority, like `--lang` |
 | `ANIWORLD_HOSTER` | hoster priority, like `--hoster` |
+| `ANIWORLD_ANIME4K` | Anime4K mode, like `--anime4k` |
+| `ANIWORLD_ANIME4K_DIR` | where the Anime4K shaders are cached |
 | `ANIWORLD_STATE_DIR` | where resume and watchlist data is stored |
 | `ANIWORLD_BASE_URL` | override the site URL |
 | `ANIWORLD_UA` | custom User-Agent |
 
 Resume and watchlist data lives in `state.json` under `%APPDATA%\aniworld-cli`
 on Windows and `~/.config/aniworld-cli` (or `$XDG_CONFIG_HOME`) elsewhere.
+
+### Anime4K upscaling
+
+`--anime4k` enables [Anime4K](https://github.com/bloc97/Anime4K) v4 upscaling.
+Pick the mode that matches the source:
+
+| Mode | Use for |
+|---|---|
+| `a` (default) | most 1080p anime |
+| `b` | 720p anime, 1080p downscaled to 720p |
+| `c` | 480p anime, clean sources |
+| `a+a`, `b+b`, `c+a` | the sharper secondary variants; only on upscaling of x2 or more |
+
+```bash
+aniworld-cli "frieren" --anime4k              # mode A (1080p)
+aniworld-cli "frieren" --anime4k b            # mode B (720p)
+aniworld-cli "frieren" --anime4k c+a --anime4k-hq
+ANIWORLD_ANIME4K=off aniworld-cli "frieren"   # force it off
+```
+
+The shaders (14 files, about 2 MB) are downloaded once from the pinned Anime4K
+`v4.0.1` tag into `$XDG_CONFIG_HOME/aniworld-cli/anime4k/shaders`
+(`%APPDATA%\aniworld-cli\anime4k\shaders` on Windows), or wherever
+`ANIWORLD_ANIME4K_DIR` points. If the download fails, the episode still plays,
+just without upscaling.
+
+Nothing is written to `~/.config/mpv`. The chain is appended with
+`--glsl-shaders-append`, so a custom `mpv.conf` keeps its own settings, and if
+it already loads Anime4K the flag steps aside instead of stacking shaders.
+
+When mpv has no `input.conf` (no custom controls yet), aniworld-cli passes a
+generated one, so **Ctrl+1..Ctrl+6** switch modes while an episode plays and
+**Ctrl+0** clears the shaders again. If you do have an `input.conf`, your keys
+are left untouched and only the shader chain is added.
+
+The default shader variants are the fast ones (M/S). `--anime4k-hq` uses the
+larger VL/M variants; if frames drop, go back to the default ones. Shift+I then
+2 in mpv shows the frame timings.
 
 ## Troubleshooting
 
@@ -175,6 +220,7 @@ on Windows and `~/.config/aniworld-cli` (or `$XDG_CONFIG_HOME`) elsewhere.
 | `fzf not found!` | Only happens when installed from source without the bundled fzf. Install fzf or use the release wheel. |
 | `No hoster returned a playable stream!` | The hosters are down for this episode. Try again later or pick another language with `--lang`. |
 | Cloudflare message | The site is blocking automated access. An external [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) service can help (not included). |
+| Frames drop with `--anime4k` | Drop `--anime4k-hq` or pick a smaller mode; Ctrl+0 clears the shaders mid-episode. |
 | Garbled characters on Windows | UTF-8 is forced automatically; on old consoles `chcp 65001` helps. |
 | No mpv window in WSL | WSL needs a GUI backend (WSLg on Windows 11). `--debug` still resolves the URL. |
 

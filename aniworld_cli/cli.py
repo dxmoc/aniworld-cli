@@ -16,7 +16,7 @@ from typing import cast
 
 from iterfzf import BUNDLED_EXECUTABLE, iterfzf
 
-from . import i18n, player
+from . import anime4k, i18n, player
 from .models import Episode, Series, Stream
 
 # Wheels ship fzf inside iterfzf; source builds (e.g. Nix) rely on fzf from PATH.
@@ -264,6 +264,13 @@ def run(args: argparse.Namespace) -> int:
         if notice:
             warn(notice)
 
+    # Reject a bad --anime4k mode before any network or file work.
+    try:
+        args.anime4k = anime4k.parse_mode(getattr(args, "anime4k", None))
+    except anime4k.Anime4KError as exc:
+        error(str(exc))
+        return 1
+
     # mpv is required for actual playback (not for --debug).
     if not args.debug and not check_player(args.player):
         return 1
@@ -452,7 +459,14 @@ def resolve_and_play(
         return 0, next_lang
 
     title = f"{series.title} – {episode.label}" if series else episode.label
-    return play_stream(stream, args.player, title), next_lang
+    rc = play_stream(
+        stream,
+        args.player,
+        title,
+        anime4k_mode=getattr(args, "anime4k", None),
+        anime4k_hq=getattr(args, "anime4k_hq", False),
+    )
+    return rc, next_lang
 
 
 def post_playback_menu(
@@ -473,11 +487,28 @@ def post_playback_menu(
     return _select(i18n.t("what_next", _playing_label(episode), series.title), choices)  # type: ignore[return-value]
 
 
-def play_stream(stream: Stream, player_path: str | None, title: str | None = None) -> int:
+def _anime4k_args(mode: str | None, hq: bool) -> list[str]:
+    """Anime4K mpv flags for this run; a download failure only costs the shaders."""
+    if not mode:
+        return []
+    try:
+        return anime4k.prepare(mode, hq=hq, report=info, warn=warn)
+    except anime4k.Anime4KError as exc:
+        warn(str(exc))
+        return []
+
+
+def play_stream(
+    stream: Stream,
+    player_path: str | None,
+    title: str | None = None,
+    anime4k_mode: str | None = None,
+    anime4k_hq: bool = False,
+) -> int:
     """Launch mpv, surfacing an error if it cannot start."""
     info(i18n.t("starting_player"))
     try:
-        rc = player.play(stream, player_path, title)
+        rc = player.play(stream, player_path, title, _anime4k_args(anime4k_mode, anime4k_hq))
     except player.PlayerNotFound as exc:
         error(i18n.t("mpv_missing"))
         error(str(exc))

@@ -44,7 +44,12 @@ def install_hint() -> str:
     return i18n.t("mpv_hint_linux")
 
 
-def build_command(mpv_path: str, stream: Stream, title: str | None = None) -> list[str]:
+def build_command(
+    mpv_path: str,
+    stream: Stream,
+    title: str | None = None,
+    extra_args: list[str] | None = None,
+) -> list[str]:
     """Build the mpv argv from the resolved stream and its required headers.
 
     User-Agent is passed via mpv's dedicated ``--user-agent`` flag rather than
@@ -58,8 +63,12 @@ def build_command(mpv_path: str, stream: Stream, title: str | None = None) -> li
 
     ``--no-terminal`` keeps mpv's log (track list, harmless ffmpeg TLS noise on
     quit) out of the terminal, as with ani-cli; mpv is controlled in its window.
+
+    ``extra_args`` (e.g. the Anime4K ``--glsl-shaders-append`` flags) are passed
+    before the headers so the stream URL stays last.
     """
     cmd = [mpv_path, "--no-terminal"]
+    cmd.extend(extra_args or [])
     headers = dict(stream.headers)
     user_agent = next(
         (headers.pop(k) for k in list(headers) if k.lower() == "user-agent"), None
@@ -75,7 +84,12 @@ def build_command(mpv_path: str, stream: Stream, title: str | None = None) -> li
     return cmd
 
 
-def play(stream: Stream, mpv_path: str | None = None, title: str | None = None) -> int:
+def play(
+    stream: Stream,
+    mpv_path: str | None = None,
+    title: str | None = None,
+    extra_args: list[str] | None = None,
+) -> int:
     """Launch mpv for ``stream``. Returns mpv's exit code.
 
     Raises PlayerNotFound if mpv is unavailable.
@@ -83,6 +97,6 @@ def play(stream: Stream, mpv_path: str | None = None, title: str | None = None) 
     resolved = find_mpv(mpv_path)
     if not resolved:
         raise PlayerNotFound(install_hint())
-    cmd = build_command(resolved, stream, title)
+    cmd = build_command(resolved, stream, title, extra_args)
     proc = subprocess.run(cmd)  # noqa: S603 - argv list, no shell
     return proc.returncode

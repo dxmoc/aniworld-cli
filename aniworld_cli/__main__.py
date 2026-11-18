@@ -46,6 +46,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--player", help="path to mpv (default: from PATH)")
     p.add_argument(
+        "--anime4k",
+        nargs="?",
+        const="a",
+        metavar="MODE",
+        help=(
+            "upscale with Anime4K shaders: a (1080p, default), b (720p), c (480p), "
+            "a+a, b+b, c+a, or off"
+        ),
+    )
+    p.add_argument(
+        "--anime4k-hq",
+        action="store_true",
+        help="slower, higher-quality Anime4K shader variants (needs a strong GPU)",
+    )
+    p.add_argument(
         "--debug",
         action="store_true",
         help="resolve and print the stream URL and headers, do not start mpv",
@@ -62,6 +77,8 @@ def _apply_env_overrides(args: argparse.Namespace) -> None:
         os.environ["ANIWORLD_LANG"] = args.lang
     if args.hoster:
         os.environ["ANIWORLD_HOSTER"] = args.hoster
+    if not getattr(args, "anime4k", None) and os.environ.get("ANIWORLD_ANIME4K"):
+        args.anime4k = os.environ["ANIWORLD_ANIME4K"]
 
 
 def _force_utf8_stdio() -> None:
