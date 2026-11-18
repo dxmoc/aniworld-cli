@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -122,6 +123,24 @@ def test_prepare_adds_input_conf_only_without_custom_controls(tmp_path, monkeypa
     mpv_dir.mkdir(parents=True)
     (mpv_dir / "input.conf").write_text("f cycle fullscreen\n", encoding="utf-8")
     assert not any(arg.startswith("--input-conf=") for arg in anime4k.prepare("b"))
+
+
+@pytest.mark.skipif(
+    sys.platform.startswith("win"), reason="POSIX permissions required"
+)
+def test_prepare_survives_a_read_only_shader_dir(tmp_path, monkeypatch):
+    """A Nix store (or any read-only cache) still plays, just without the hotkeys."""
+    cache = tmp_path / "cache"
+    monkeypatch.setenv("ANIWORLD_ANIME4K_DIR", str(cache))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    anime4k.ensure_shaders(fetch=_fake_fetch([]))
+    cache.chmod(0o555)
+    try:
+        args = anime4k.prepare("a")
+    finally:
+        cache.chmod(0o755)
+    assert any(arg.startswith("--glsl-shaders-append=") for arg in args)
+    assert not any(arg.startswith("--input-conf=") for arg in args)
 
 
 def test_prepare_skips_when_mpv_conf_already_uses_anime4k(tmp_path, monkeypatch):

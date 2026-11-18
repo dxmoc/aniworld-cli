@@ -302,5 +302,9 @@ def prepare(mode: str, hq: bool = False, report=None, warn=None) -> list[str]:
     # Without an input.conf there are no custom controls to preserve, so hand
     # mpv the generated one and mode switching works right away.
     if not has_custom_controls():
-        args.append(f"--input-conf={write_input_conf(base, hq).as_posix()}")
+        try:
+            args.append(f"--input-conf={write_input_conf(base, hq).as_posix()}")
+        except OSError:
+            # Read-only cache (e.g. a Nix store path): play without the hotkeys.
+            pass
     return args
