@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import shutil
 from pathlib import Path
 
 import pytest
@@ -60,7 +61,7 @@ def test_materialize_refreshes_when_the_pack_version_changes(tmp_path: Path, mon
     assert "stale" not in (dest / "mpv.conf").read_text(encoding="utf-8")
 
 
-def test_modernz_conf_is_seeded_once_and_never_clobbered(tmp_path: Path, monkeypatch):
+def test_modernz_conf_edit_is_never_clobbered(tmp_path: Path, monkeypatch):
     """Users edit modernz.conf; a pack update must not undo that."""
     dest = mpv_pack.materialize(tmp_path / "mpv")
     assert dest is not None
@@ -80,6 +81,34 @@ def test_modernz_conf_is_seeded_once_and_never_clobbered(tmp_path: Path, monkeyp
     assert conf.read_text(encoding="utf-8") == "custom_button1=no\n"
     # ...while ordinary pack files are still refreshed.
     assert "custom_button" not in (dest / "mpv.conf").read_text(encoding="utf-8")
+
+
+def test_untouched_modernz_conf_gets_new_defaults(tmp_path: Path, monkeypatch):
+    """A user who never edited the file must still receive pack updates.
+
+    Seeding a file once used to freeze it at its first version, so a new default
+    -- a new button, a renamed option -- could never reach an existing install.
+    The shipped content is hashed instead, and only an edit blocks the refresh.
+    """
+    pack = tmp_path / "pack"
+    shutil.copytree(mpv_pack.pack_source(), pack)
+    monkeypatch.setattr(mpv_pack, "pack_source", lambda: pack)
+    dest = mpv_pack.materialize(tmp_path / "mpv")
+    conf = dest / "script-opts" / "modernz.conf"
+
+    def ship(text: str) -> None:
+        (pack / "script-opts" / "modernz.conf").write_text(text, encoding="utf-8")
+        monkeypatch.setattr(mpv_pack, "PACK_VERSION", mpv_pack.PACK_VERSION + text)
+
+    ship("custom_button1=yes  # v2\n")
+    mpv_pack.materialize(tmp_path / "mpv")
+    assert conf.read_text(encoding="utf-8") == "custom_button1=yes  # v2\n"
+
+    # Now the user edits it: from here on the file is theirs alone.
+    conf.write_text("custom_button1=no\n", encoding="utf-8")
+    ship("custom_button1=yes  # v3\n")
+    mpv_pack.materialize(tmp_path / "mpv")
+    assert conf.read_text(encoding="utf-8") == "custom_button1=no\n"
 
 
 def test_materialize_returns_none_without_a_source(monkeypatch, tmp_path: Path):

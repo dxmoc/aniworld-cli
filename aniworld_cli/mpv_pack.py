@@ -16,19 +16,23 @@ Two locations matter:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import shutil
 import sys
 from pathlib import Path
 
 #: Bump when the shipped pack changes, so existing installs refresh their copy.
-PACK_VERSION = "7"
+PACK_VERSION = "8"
 
 USER_OVERLAY = "user-overlay.conf"
 
-#: Files written once and then owned by the user: later pack versions must not
-#: overwrite them, or every update would silently undo local settings.
+# Files the user is invited to edit. They are refreshed on every pack update
+# *unless* the file changed since we last wrote it -- then the user's version
+# wins for good. The hashes of what we shipped live in HASH_FILE.
 SEED_ONLY = ("script-opts/modernz.conf",)
+HASH_FILE = ".pack-hashes"
 
 
 class ConfigError(ValueError):
@@ -45,22 +49,37 @@ class ConfigError(ValueError):
 _explained: set[str] = set()
 
 
-def _copy_tree(source_dir: Path, dest_dir: Path, pack_root: Path) -> None:
+def _digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _read_hashes(dest: Path) -> dict[str, str]:
+    try:
+        return json.loads((dest / HASH_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _copy_tree(source_dir: Path, dest_dir: Path, pack_root: Path, hashes: dict[str, str]) -> None:
     """Merge one directory of the pack into ``dest_dir``.
 
-    Directories are merged, files are replaced -- except the :data:`SEED_ONLY`
-    ones, which are only written when absent.
+    Directories are merged and files are replaced -- except the :data:`SEED_ONLY`
+    ones, which are only replaced while they still hold exactly what we wrote
+    last time. A user edit freezes the file, so new defaults reach everybody who
+    never touched it and nobody who did.
     """
     dest_dir.mkdir(parents=True, exist_ok=True)
     for item in source_dir.iterdir():
         target = dest_dir / item.name
         if item.is_dir():
-            _copy_tree(item, target, pack_root)
+            _copy_tree(item, target, pack_root, hashes)
             continue
         rel = item.relative_to(pack_root).as_posix()
-        if rel in SEED_ONLY and target.exists():
-            continue
+        if rel in SEED_ONLY and target.exists() and _digest(target) != hashes.get(rel):
+            continue      # edited by the user: leave it alone from now on
         shutil.copy2(item, target)
+        if rel in SEED_ONLY:
+            hashes[rel] = _digest(target)
 
 
 def app_data_dir() -> Path:
@@ -99,11 +118,12 @@ def materialize(target: Path | None = None) -> Path | None:
         pass
 
     dest.mkdir(parents=True, exist_ok=True)
+    hashes = _read_hashes(dest)
     for item in source.iterdir():
         if item.name.startswith("."):
             continue
         if item.is_dir():
-            _copy_tree(item, dest / item.name, source)
+            _copy_tree(item, dest / item.name, source, hashes)
         else:
             shutil.copy2(item, dest / item.name)
 
@@ -113,6 +133,7 @@ def materialize(target: Path | None = None) -> Path | None:
             "# Your own mpv options. This file survives updates.\n", encoding="utf-8"
         )
     try:
+        (dest / HASH_FILE).write_text(json.dumps(hashes, indent=2, sort_keys=True), encoding="utf-8")
         stamp.write_text(PACK_VERSION + "\n", encoding="utf-8")
     except OSError:
         pass

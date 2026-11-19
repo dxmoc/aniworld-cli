@@ -184,10 +184,11 @@ because a wheel, a Nix store path or a PyInstaller bundle can be read-only:
 | Windows | `%LOCALAPPDATA%\aniworld-cli\mpv` |
 
 Two files there are yours: `user-overlay.conf` is included from `mpv.conf` and
-`script-opts/modernz.conf` configures the on-screen controls. Both are written
-once and never overwritten by an update — delete one to get the defaults back.
-Updates replace everything else, and the copy is refreshed automatically when
-the shipped pack changes.
+`script-opts/modernz.conf` configures the on-screen controls. `user-overlay.conf`
+is written once and never touched again. `script-opts/modernz.conf` is refreshed
+when a pack update ships new defaults, until you edit it — from then on it is
+yours, and deleting it brings the defaults back. Updates replace everything else,
+and the copy is refreshed automatically when the shipped pack changes.
 
 `--mpv-config user` skips all of this: mpv then uses your own configuration and
 Anime4K is disabled, because replacing your shader chain would be rude.
