@@ -112,12 +112,37 @@ local user_opts = {
     ontop_in_topbar = false,               -- move ontop button to top bar when ontop is active
     screenshot_button = true,              -- show screenshot button
 
-    -- one extra, user-defined button: label and command come from script-opts,
-    -- so scripts can add a button without patching the layout
-    custom_button = false,                 -- show a user-definable extra button
-    custom_button_label = "A",             -- short text on that button
-    custom_button_tooltip = "",            -- tooltip; empty falls back to the label
-    custom_button_command = "",            -- command run on left click
+    -- extra, user-defined buttons: label and command come from script-opts, so a
+    -- script can add a button without patching the layout
+    custom_button1 = false,                -- show user-definable button 1
+    custom_button1_label = "",             -- short text on that button
+    custom_button1_tooltip = "",           -- tooltip; empty falls back to the label
+    custom_button1_command = "",
+    custom_button1_label_off = "",
+    custom_button1_toggle_property = "",
+    custom_button1_mbtn_left_command = "",
+    custom_button1_mbtn_right_command = "",           -- command run on left click
+    custom_button2 = false,                -- show user-definable button 2
+    custom_button2_label = "",
+    custom_button2_tooltip = "",
+    custom_button2_command = "",
+    custom_button2_label_off = "",
+    custom_button2_toggle_property = "",
+    custom_button2_mbtn_left_command = "",
+    custom_button2_mbtn_right_command = "",
+    custom_button3 = false,                -- show user-definable button 3
+    custom_button3_label = "",
+    custom_button3_tooltip = "",
+    custom_button3_command = "",
+    -- Any of the three buttons may also be a toggle: while _toggle_property is
+    -- true it shows _label_off instead of _label, which is how a button can say
+    -- "shaders are off" without a second script writing labels at runtime.
+    custom_button3_label_off = "",
+    custom_button3_toggle_property = "",
+    -- Left click stays _command; right click gets its own action, like every
+    -- built-in OSC button already has.
+    custom_button3_mbtn_left_command = "",
+    custom_button3_mbtn_right_command = "",
 
     download_button = true,                -- show download button on web videos (requires yt-dlp and ffmpeg)
     download_path = "~~desktop/mpv",       -- default download directory for videos (https://mpv.io/manual/master/#paths)
@@ -2287,7 +2312,14 @@ layouts["default"] = function ()
 
     if playlist_button then left_side_button("playlist", 550) end
     if audio_track and user_opts.audio_tracks_button then left_side_button("audio_track", 650) end
-    if user_opts.custom_button and user_opts.custom_button_command ~= "" then left_side_button("custom_button", 650) end
+    for _, index in ipairs({1, 2, 3}) do
+        local prefix = "custom_button" .. index
+        if user_opts[prefix] and (user_opts[prefix .. "_command"] ~= ""
+            or user_opts[prefix .. "_mbtn_left_command"] ~= ""
+            or user_opts[prefix .. "_mbtn_right_command"] ~= "") then
+            left_side_button(prefix, 650)
+        end
+    end
     if subtitle_track and user_opts.subtitles_button then left_side_button("sub_track", 750) end
 
     if audio_track and user_opts.volume_control then
@@ -2630,7 +2662,10 @@ layouts["compact"] = function ()
     right_side_button("ontop", 400, user_opts.ontop_button and not (window_controls_enabled() and user_opts.ontop_in_topbar and state.ontop))
     right_side_button("sub_track", 500, user_opts.subtitles_button and state.sub_track_count > 0)
     right_side_button("audio_track", 600, user_opts.audio_tracks_button and state.audio_track_count > 0)
-    right_side_button("custom_button", 600, user_opts.custom_button and user_opts.custom_button_command ~= "")
+    for _, index in ipairs({1, 2, 3}) do
+        local prefix = "custom_button" .. index
+        right_side_button(prefix, 600, user_opts[prefix] and user_opts[prefix .. "_command"] ~= "")
+    end
     right_side_button("playlist", 300, user_opts.playlist_button)
     right_side_button("download", 800, state.is_url and user_opts.download_button)
     right_side_button("speed", 800, user_opts.speed_button, osc_styles.speed, 42)
@@ -2806,7 +2841,10 @@ layouts["mini"] = function ()
     right_side_button("ontop", 300, user_opts.ontop_button and not (window_controls_enabled() and user_opts.ontop_in_topbar and state.ontop))
     right_side_button("sub_track", 400, user_opts.subtitles_button and state.sub_track_count > 0)
     right_side_button("audio_track", 500, user_opts.audio_tracks_button and state.audio_track_count > 0)
-    right_side_button("custom_button", 500, user_opts.custom_button and user_opts.custom_button_command ~= "")
+    for _, index in ipairs({1, 2, 3}) do
+        local prefix = "custom_button" .. index
+        right_side_button(prefix, 500, user_opts[prefix] and user_opts[prefix .. "_command"] ~= "")
+    end
     right_side_button("playlist", 600, user_opts.playlist_button)
     right_side_button("download", 700, state.is_url and user_opts.download_button)
     right_side_button("speed", 700, user_opts.speed_button, osc_styles.speed, 42)
@@ -3421,12 +3459,31 @@ local function osc_init()
     ne.tooltipF = locale.screenshot
     bind_buttons("screenshot")
 
-    --custom_button (user-defined label + command from script-opts)
-    ne = new_element("custom_button", "button")
-    ne.content = user_opts.custom_button_label
-    ne.tooltipF = user_opts.custom_button_tooltip ~= "" and user_opts.custom_button_tooltip or user_opts.custom_button_label
-    if user_opts.custom_button_command ~= "" then
-        ne.eventresponder["mbtn_left_up"] = function() mp.command(user_opts.custom_button_command) end
+    --custom_button1 / custom_button2 / custom_button3 (user-defined label + command)
+    for _, index in ipairs({1, 2, 3}) do
+        local prefix = "custom_button" .. index
+        ne = new_element(prefix, "button")
+        local label_off = user_opts[prefix .. "_label_off"]
+        local toggle_prop = user_opts[prefix .. "_toggle_property"]
+        if label_off ~= "" and toggle_prop ~= "" then
+            ne.content = function()
+                return mp.get_property_native(toggle_prop) and label_off
+                    or user_opts[prefix .. "_label"]
+            end
+            -- repaint the bar when the state it shows changes
+            mp.observe_property(toggle_prop, "native", request_tick)
+        else
+            ne.content = user_opts[prefix .. "_label"]
+        end
+        ne.tooltipF = user_opts[prefix .. "_tooltip"] ~= "" and user_opts[prefix .. "_tooltip"]
+            or user_opts[prefix .. "_label"]
+        -- _command is the left-click action; the generic per-button options can
+        -- override either mouse button, exactly as for the built-in buttons.
+        if user_opts[prefix .. "_mbtn_left_command"] == ""
+            and user_opts[prefix .. "_command"] ~= "" then
+            user_opts[prefix .. "_mbtn_left_command"] = user_opts[prefix .. "_command"]
+        end
+        bind_buttons(prefix)
     end
 
     --file_loop

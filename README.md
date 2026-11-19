@@ -38,7 +38,7 @@
 - **Bundled mpv + Anime4K**: an isolated mpv config with upscaling shaders ships
   inside the package, so a 720p stream looks sharp without touching your own
   `~/.config/mpv`. Switch language, quality or shader *while watching*
-  (`Alt+s`, `Alt+u`, or the A4K button).
+  (`Alt+s`, `Alt+u`, or the A4K button in the on-screen controls).
 - **Update hint**: once a day it checks GitHub for a newer release and prints
   the upgrade command (pipx or pip). Offline or rate-limited, it stays quiet.
 
@@ -208,11 +208,14 @@ seconds headless, which exercises the pack and the IPC socket but draws nothing.
 | `Alt+l` | language only |
 | `Alt+q` | quality only |
 | `Alt+u` | Anime4K preset only (`1`–`7`, `Esc` closes) |
+| `Alt+k` | all key bindings |
 | `Esc` | close the menu |
 
 The shader menu explains what each preset does and marks the one that suits
 your stream's resolution. The same menu is on the **A4K** button in the
-on-screen controls, next to the audio-track button. Switching a shader applies instantly; switching
+on-screen controls: left click turns the presets on and off, right click opens
+the menu. Beside it, the **K** button lists every key binding and the **Lang**
+button opens the language menu. Switching a shader applies instantly; switching
 language or quality reloads the stream — the three languages are separate
 encodes with burned-in subtitles, so there is no audio track to switch to. The
 new stream resumes at the position you were at. A quality you picked yourself is

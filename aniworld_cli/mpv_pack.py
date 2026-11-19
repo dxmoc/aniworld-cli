@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 #: Bump when the shipped pack changes, so existing installs refresh their copy.
-PACK_VERSION = "6"
+PACK_VERSION = "7"
 
 USER_OVERLAY = "user-overlay.conf"
 

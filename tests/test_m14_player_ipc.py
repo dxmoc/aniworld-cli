@@ -414,6 +414,29 @@ def test_explicit_preset_overrides_the_source(tmp_path: Path):
     assert session._initial_preset() == shaders.auto_preset(None)
 
 
+def test_menu_marks_the_language_the_cli_picked_itself(tmp_path: Path):
+    """With no --lang the CLI chooses a language; the menu must still show it.
+
+    Otherwise the language menu opens with nothing selected and the user cannot
+    tell which dub they are listening to.
+    """
+    args = type("A", (), {"anime4k": None, "mpv_args": None, "mpv_config": "user"})()
+    session = playback.Session(
+        series=None,
+        episode=Episode(series_slug="frieren", url="", season=1, number=1),
+        hosters=[Hoster("VOE", 1, "ger-dub", "u1"), Hoster("VOE", 3, "eng-sub", "u3")],
+        stream=Stream(url="https://cdn/a.m3u8", headers={}),
+        hoster=Hoster("VOE", 3, "eng-sub", "u3"),
+        language=None,                       # resolved by the CLI, not the user
+        args=args,
+        mpv_path="mpv",
+    )
+    session._fetch_variants = lambda stream: []  # type: ignore[assignment]
+    state = session._state()
+    assert state["lang"] == "eng-sub"
+    assert state["lang"] in [row["token"] for row in state["langs"]]
+
+
 def test_recommended_row_is_the_automatic_choice_not_the_manual_one(tmp_path: Path):
     """The menu marks what auto would pick, even after a manual --anime4k pick."""
     session = _session(tmp_path)

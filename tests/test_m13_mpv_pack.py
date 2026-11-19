@@ -2,11 +2,33 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
 
 from aniworld_cli import mpv_pack, shaders
+
+
+def test_every_button_target_actually_exists():
+    """Every script-binding the shipped configs use must exist in the script.
+
+    A missing binding is silent: the button fires, mpv answers "can't find
+    script", and nothing happens. A Lua error is worse -- mpv terminates the
+    script, after which every button stops working until the player restarts.
+    """
+    pack_root = mpv_pack.pack_source()
+    lua = (pack_root / "scripts" / "aniworld.lua").read_text(encoding="utf-8")
+    bound = set(re.findall(r'mp\.add_key_binding\(\s*nil\s*,\s*"([\w-]+)"', lua))
+    assert "toggle-shaders" in bound and "menu-shaders" in bound
+
+    used = set()
+    for name in ("script-opts/modernz.conf", "input.conf"):
+        text = (pack_root / name).read_text(encoding="utf-8")
+        used |= set(re.findall(r"script-binding\s+aniworld/([\w-]+)", text))
+    assert used, "no aniworld bindings referenced at all?"
+    missing = used - bound
+    assert not missing, f"config references bindings the script does not define: {missing}"
 
 
 def test_materialize_copies_the_pack_and_creates_the_overlay(tmp_path: Path):
@@ -44,12 +66,18 @@ def test_modernz_conf_is_seeded_once_and_never_clobbered(tmp_path: Path, monkeyp
     assert dest is not None
     conf = dest / "script-opts" / "modernz.conf"
     assert conf.is_file()
-    assert "custom_button=yes" in conf.read_text(encoding="utf-8")
+    text = conf.read_text(encoding="utf-8")
+    assert "custom_button1=yes" in text        # A4K: Anime4K menu
+    assert "custom_button2=yes" in text        # K: key bindings
+    assert "custom_button3=yes" in text        # Lang: language menu
+    # Switching audio tracks cannot work here (one track, languages are separate
+    # encodes), so the track button is off and Lang does the job instead.
+    assert "audio_tracks_button=no" in text
 
-    conf.write_text("custom_button=no\n", encoding="utf-8")
+    conf.write_text("custom_button1=no\n", encoding="utf-8")
     monkeypatch.setattr(mpv_pack, "PACK_VERSION", "999")
     mpv_pack.materialize(tmp_path / "mpv")
-    assert conf.read_text(encoding="utf-8") == "custom_button=no\n"
+    assert conf.read_text(encoding="utf-8") == "custom_button1=no\n"
     # ...while ordinary pack files are still refreshed.
     assert "custom_button" not in (dest / "mpv.conf").read_text(encoding="utf-8")
 

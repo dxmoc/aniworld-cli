@@ -46,7 +46,9 @@ class Session:
         self.hosters = hosters
         self.stream = stream
         self.hoster = hoster
-        self.language = language
+        # When the CLI picks the language itself this is None, and the menu would
+        # then have nothing to mark as current. The hoster that was chosen knows.
+        self.language = language or (hoster.lang if hoster else None)
         self.args = args
         self.mpv_path = mpv_path
 
@@ -278,6 +280,14 @@ class Session:
         )
 
     def _apply_shaders(self) -> None:
+        """Apply the current preset — the only writer of ``glsl-shaders``.
+
+        mpv's OSC button is a thin client: it sends ``aniworld-cmd shader
+        <token>`` and repaints its own icon, nothing else. If this process is
+        not there to answer (mpv started by hand with the same argv), the
+        message goes nowhere: the button still responds and its icon still
+        flips, but the picture never changes.
+        """
         if self.mpv is None:
             return
         if not self.shader_dir:
