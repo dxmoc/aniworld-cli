@@ -16,7 +16,7 @@ from typing import cast
 
 from iterfzf import BUNDLED_EXECUTABLE, iterfzf
 
-from . import i18n, mpv_pack, player, shaders
+from . import i18n, mpv_pack, player, playback, shaders
 from .models import Episode, Series, Stream
 
 # Wheels ship fzf inside iterfzf; source builds (e.g. Nix) rely on fzf from PATH.
@@ -452,7 +452,31 @@ def resolve_and_play(
         return 0, next_lang
 
     title = f"{series.title} – {episode.label}" if series else episode.label
-    return play_stream(stream, args.player, title, args), next_lang
+    mpv = player.find_mpv(args.player)
+    if getattr(args, "control", True) and mpv:
+        try:
+            return (
+                playback.launch(
+                    series,
+                    episode,
+                    hosters,
+                    stream,
+                    _hoster,
+                    language,
+                    args,
+                    mpv,
+                ),
+                next_lang,
+            )
+        except player.PlayerNotFound as exc:
+            error(str(exc))
+            return 1, next_lang
+        except mpv_pack.ConfigError as exc:
+            error(str(exc))
+            return 2, next_lang
+    # Without in-player controls there is no IPC socket, but the bundled config,
+    # the shaders and --mpv-args must still apply here.
+    return play_stream(stream, args.player, title, args, mpv), next_lang
 
 
 def post_playback_menu(
@@ -478,18 +502,16 @@ def play_stream(
     player_path: str | None,
     title: str | None = None,
     args: argparse.Namespace | None = None,
+    mpv: str | None = None,
 ) -> int:
     """Launch mpv, surfacing an error if it cannot start."""
     info(i18n.t("starting_player"))
     extra = player.split_args(getattr(args, "mpv_args", None))
-    # Locate the binary before asking for the config dir: the portable-config
-    # check looks *next to* mpv.exe, and the raw "--player mpv" is a bare name
-    # that would resolve against the current directory instead.
-    mpv = player.find_mpv(player_path) or ""
     try:
-        config_dir = mpv_pack.resolve(
-            getattr(args, "mpv_config", "bundled"), mpv
-        )
+        # ``mpv`` is the located binary, not the raw --player name: the portable
+        # config is looked up next to mpv.exe, and a bare "mpv" would resolve
+        # against the current directory instead.
+        config_dir = mpv_pack.resolve(getattr(args, "mpv_config", "bundled"), mpv or "")
     except mpv_pack.ConfigError as exc:
         error(str(exc))
         return 2

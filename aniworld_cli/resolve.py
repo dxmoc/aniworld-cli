@@ -13,6 +13,8 @@ wall of 403s. So we fetch one real segment; if it fails, we try the next hoster.
 
 from __future__ import annotations
 
+import re
+import time
 from typing import Callable, Optional
 from urllib.parse import urljoin
 
@@ -64,6 +66,56 @@ def order_hosters(hosters: list[Hoster], language: str | None = None) -> list[Ho
 
     candidates = [h for h in hosters if h.lang in lang_pri]
     return sorted(candidates, key=lambda h: (lang_rank(h), host_rank(h)))
+
+
+def list_variants(
+    stream: Stream, session: requests.Session, retries: int = 2
+) -> list[tuple[int, str]]:
+    """Quality variants of an HLS master playlist as ``(height, url)``.
+
+    aniworld's hosts serve 720p plus a 480p fallback for most shows, 1080p only
+    for some english-subtitle encodes. A progressive URL has no variants.
+
+    Used for the in-player quality menu and to pick an Anime4K preset that suits
+    the source: the playlist is the only place the real resolution is stated
+    before playback starts.
+
+    The hosts rate-limit back-to-back requests for one token, so a fresh master
+    can answer 403 to a request made a few hundred milliseconds after the
+    liveness check fetched the very same URL. One short retry covers it.
+    """
+    if ".m3u8" not in stream.url.lower():
+        return []
+
+    master = None
+    for attempt in range(retries + 1):
+        try:
+            master = session.get(stream.url, headers=stream.headers, timeout=config.TIMEOUT)
+        except requests.RequestException:
+            master = None
+        if master is not None and master.status_code in _OK_STATUS:
+            break
+        if attempt < retries:
+            time.sleep(0.4)
+    if master is None or master.status_code not in _OK_STATUS:
+        return []
+
+    variants: list[tuple[int, str]] = []
+    lines = master.text.splitlines()
+    for index, line in enumerate(lines):
+        if not line.strip().startswith("#EXT-X-STREAM-INF"):
+            continue
+        match = re.search(r"RESOLUTION=\d+x(\d+)", line)
+        if not match:
+            continue
+        height = int(match.group(1))
+        for entry in lines[index + 1 :]:
+            entry = entry.strip()
+            if not entry or entry.startswith("#"):
+                continue
+            variants.append((height, urljoin(stream.url, entry)))
+            break
+    return variants
 
 
 def _first_entry(playlist_text: str, base_url: str) -> str | None:

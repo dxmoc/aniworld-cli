@@ -61,6 +61,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="extra mpv arguments, e.g. --mpv-args \"--geometry=1280x720 --mute=yes\"",
     )
     p.add_argument(
+        "--no-control",
+        dest="control",
+        action="store_false",
+        help="do not control mpv from inside the player (no in-player menu or switching)",
+    )
+    p.add_argument(
         "--debug",
         action="store_true",
         help="resolve and print the stream URL and headers, do not start mpv",

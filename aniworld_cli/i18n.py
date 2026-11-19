@@ -46,6 +46,11 @@ STRINGS: dict[str, str] = {
     ),
     "starting_player": "Starting mpv...",
     "player_failed": "mpv stopped with an error (exit code {}). Try another hoster with --hoster.",
+    # In-player controls (mpv side)
+    "switched": "Switched {} to {}",
+    "switched_no_quality": "Switched {} to {} - {} is not in this encode, using Auto (best)",
+    "switch_failed": "Could not switch, staying on the current stream",
+    "shader_changed": "Shaders: {}",
     "fzf_missing": (
         "fzf not found! Install it ('sudo apt install fzf', 'scoop install fzf') "
         "or install aniworld-cli from the wheel, which ships fzf."

@@ -114,14 +114,17 @@ def test_play_stream_finds_the_portable_config_next_to_mpv(tmp_path: Path, monke
 
     monkeypatch.setattr(mpv_pack.sys, "platform", "win32")
     monkeypatch.setattr(mpv_pack, "_explained", set())
-    monkeypatch.setattr(
-        player, "find_mpv", lambda explicit=None: str(mpv_dir / "mpv.exe")
-    )
     seen: dict = {}
     monkeypatch.setattr(player, "play", lambda *a, **k: seen.update(k) or 0)
 
     args = type("A", (), {"mpv_args": None, "mpv_config": "bundled"})()
-    rc = cli.play_stream(Stream(url="https://cdn/x.m3u8", headers={}), "mpv", "t", args)
+    rc = cli.play_stream(
+        Stream(url="https://cdn/x.m3u8", headers={}),
+        "mpv",
+        "t",
+        args,
+        str(mpv_dir / "mpv.exe"),
+    )
 
     assert rc == 0
     assert seen["config_dir"] == mpv_dir / "portable_config"
