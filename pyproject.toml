@@ -26,3 +26,16 @@ aniworld-cli = "aniworld_cli.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["aniworld_cli*"]
+
+# The bundled mpv environment (mpv.conf, input.conf, scripts/, shaders/, fonts/)
+# is data, not code: a wheel installed by install.sh only ships it with this
+# block. PyInstaller needs --collect-data on top of this.
+[tool.setuptools.package-data]
+aniworld_cli = [
+    "mpv/*.conf",
+    "mpv/scripts/*.lua",
+    "mpv/shaders/*.glsl",
+    "mpv/fonts/*.ttf",
+    "mpv/script-opts/*.conf",
+    "mpv/*.md",
+]

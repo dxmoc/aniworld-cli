@@ -16,7 +16,7 @@ from typing import cast
 
 from iterfzf import BUNDLED_EXECUTABLE, iterfzf
 
-from . import i18n, player
+from . import i18n, mpv_pack, player, shaders
 from .models import Episode, Series, Stream
 
 # Wheels ship fzf inside iterfzf; source builds (e.g. Nix) rely on fzf from PATH.
@@ -482,8 +482,25 @@ def play_stream(
     """Launch mpv, surfacing an error if it cannot start."""
     info(i18n.t("starting_player"))
     extra = player.split_args(getattr(args, "mpv_args", None))
+    # Locate the binary before asking for the config dir: the portable-config
+    # check looks *next to* mpv.exe, and the raw "--player mpv" is a bare name
+    # that would resolve against the current directory instead.
+    mpv = player.find_mpv(player_path) or ""
     try:
-        rc = player.play(stream, player_path, title, extra=extra)
+        config_dir = mpv_pack.resolve(
+            getattr(args, "mpv_config", "bundled"), mpv
+        )
+    except mpv_pack.ConfigError as exc:
+        error(str(exc))
+        return 2
+    mpv_pack.warn_custom_dir(config_dir)
+    shader_dir = mpv_pack.shader_dir(config_dir)
+    if shader_dir is not None:
+        extra.append("--glsl-shaders=" + shaders.glsl_value(shaders.DEFAULT, shader_dir))
+    try:
+        rc = player.play(
+            stream, player_path, title, extra=extra, config_dir=config_dir
+        )
     except player.PlayerNotFound as exc:
         error(i18n.t("mpv_missing"))
         error(str(exc))

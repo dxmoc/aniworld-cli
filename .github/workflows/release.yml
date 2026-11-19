@@ -53,7 +53,7 @@ jobs:
           pip install . pyinstaller
           # PyInstaller needs a plain script; __main__.py uses relative imports.
           "import sys`nfrom aniworld_cli.__main__ import main`nsys.exit(main())" | Out-File -Encoding ascii launcher.py
-          pyinstaller --noconfirm --console --name aniworld-cli --collect-all iterfzf launcher.py
+          pyinstaller --noconfirm --console --name aniworld-cli --collect-all iterfzf --collect-data aniworld_cli launcher.py
 
       - name: Add mpv (official release build, the one Scoop installs)
         env:

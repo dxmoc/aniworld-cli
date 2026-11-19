@@ -46,6 +46,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--player", help="path to mpv (default: from PATH)")
     p.add_argument(
+        "--mpv-config",
+        default="bundled",
+        metavar="MODE",
+        help=(
+            "mpv configuration: 'bundled' (shipped Anime4K + UI, materialised to the "
+            "user data dir), 'user' (leave mpv's own config and shaders alone) or a "
+            "directory"
+        ),
+    )
+    p.add_argument(
         "--mpv-args",
         metavar="ARGS",
         help="extra mpv arguments, e.g. --mpv-args \"--geometry=1280x720 --mute=yes\"",
