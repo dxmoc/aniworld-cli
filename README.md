@@ -34,11 +34,13 @@
 - **Hoster fallback**: tries VOE, then Vidmoly. Every stream is checked before
   mpv starts, so a hoster that hands out dead (403) segments is skipped instead
   of stalling the player.
-- **mpv only**: streaming, no downloads. mpv shows `Series – S01E03 – Episode title` as the title.
+- **mpv only**: streaming, no downloads. ModernZ's own download button is
+  turned off in the bundled config — it cannot work here (see
+  `script-opts/modernz.conf`). mpv shows `Series – S01E03 – Episode title` as the title.
 - **Bundled mpv + Anime4K**: an isolated mpv config with upscaling shaders ships
   inside the package, so a 720p stream looks sharp without touching your own
   `~/.config/mpv`. Switch language, quality or shader *while watching*
-  (`Alt+s`, `Alt+u`, or the A4K button in the on-screen controls).
+  (`Alt+s`, `Alt+u`, or the sparkle button in the on-screen controls).
 - **Update hint**: once a day it checks GitHub for a newer release and prints
   the upgrade command (pipx or pip). Offline or rate-limited, it stays quiet.
 
@@ -209,20 +211,22 @@ seconds headless, which exercises the pack and the IPC socket but draws nothing.
 | `Alt+l` | language only |
 | `Alt+q` | quality only |
 | `Alt+u` | Anime4K preset only (`1`–`7`, `Esc` closes) |
-| `Alt+k` | all key bindings |
+| `Alt+k` | every key binding, in two columns |
 | `Esc` | close the menu |
 
 The shader menu explains what each preset does and marks the one that suits
-your stream's resolution. The same menu is on the **A4K** button in the
+your stream's resolution. The same menu is on the sparkle button in the
 on-screen controls: left click turns the presets on and off, right click opens
-the menu. Beside it, the **K** button lists every key binding and the **Lang**
-button opens the language menu. Switching a shader applies instantly; switching
-language or quality reloads the stream — the three languages are separate
-encodes with burned-in subtitles, so there is no audio track to switch to. The
-new stream resumes at the position you were at. A quality you picked yourself is
-kept across a language switch; if that encode has no such height (1080p exists
-only on some English encodes) the switch uses Auto instead and says so in the
-player.
+the menu, and the sparkle is crossed out while they are off. Beside it, the
+keyboard button lists every key binding and the subtitles button opens the
+language menu — those three are icons from the bundled font (`fluent_anime4k`,
+`fluent_anime4k_off`, `fluent_shortcuts`, `fluent_subtitles`), not text.
+Switching a shader applies instantly; switching language or quality reloads the
+stream — the three languages are separate encodes with burned-in subtitles, so
+there is no audio track to switch to. The new stream resumes at the position you
+were at. A quality you picked yourself is kept across a language switch; if that
+encode has no such height (1080p exists only on some English encodes) the switch
+uses Auto instead and says so in the player.
 
 Adding `--no-control` starts mpv on its own, without the IPC socket, the menus
 or the shader switching (useful with `--mpv-config user`).

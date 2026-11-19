@@ -61,6 +61,41 @@ def test_materialize_refreshes_when_the_pack_version_changes(tmp_path: Path, mon
     assert "stale" not in (dest / "mpv.conf").read_text(encoding="utf-8")
 
 
+def test_button_labels_are_real_icons():
+    """A button label is drawn in the icon font, where a typo is invisible.
+
+    Lowercase letters in ``modernz-icons.ttf`` are blank, zero-width placeholders
+    that exist only to be *typed*: the font swaps a whole ligature name such as
+    ``fluent_shortcuts`` for one glyph. Anything else renders as nothing at all,
+    so the labels have to be checked against the font rather than eyeballed.
+    """
+    pytest.importorskip("fontTools.ttLib")
+    from fontTools.ttLib import TTFont
+
+    font = TTFont(mpv_pack.pack_source() / "fonts" / "modernz-icons.ttf")
+    cmap = font.getBestCmap()
+    cp_of = {name: cp for cp, name in cmap.items()}
+    ligatures = {
+        "".join(chr(cp_of[g]) for g in [first] + list(ligature.Component))
+        for lookup in font["GSUB"].table.LookupList.Lookup
+        for subtable in lookup.SubTable
+        for first, ligature_set in (subtable.ligatures or {}).items()
+        for ligature in ligature_set
+    }
+    # The pack's own icons have to survive a font refresh.
+    assert {"fluent_anime4k", "fluent_anime4k_off", "fluent_shortcuts"} <= ligatures
+
+    conf = (mpv_pack.pack_source() / "script-opts" / "modernz.conf").read_text(encoding="utf-8")
+    labels = re.findall(r"^custom_button\d+_label(?:_off)?\s*=\s*(\S+)\s*$", conf, flags=re.M)
+    assert labels, "no custom button labels found -- did the option names change?"
+    for label in labels:
+        assert label in ligatures or label.upper() == label, (
+            f"button label {label!r} is neither a ligature in modernz-icons.ttf nor "
+            f"uppercase text: the icon font renders lowercase letters as blank, so "
+            f"this button would show an empty box"
+        )
+
+
 def test_modernz_conf_edit_is_never_clobbered(tmp_path: Path, monkeypatch):
     """Users edit modernz.conf; a pack update must not undo that."""
     dest = mpv_pack.materialize(tmp_path / "mpv")
@@ -68,12 +103,16 @@ def test_modernz_conf_edit_is_never_clobbered(tmp_path: Path, monkeypatch):
     conf = dest / "script-opts" / "modernz.conf"
     assert conf.is_file()
     text = conf.read_text(encoding="utf-8")
-    assert "custom_button1=yes" in text        # A4K: Anime4K menu
-    assert "custom_button2=yes" in text        # K: key bindings
-    assert "custom_button3=yes" in text        # Lang: language menu
+    assert "custom_button1=yes" in text        # sparkle: Anime4K menu
+    assert "custom_button2=yes" in text        # keyboard: key bindings
+    assert "custom_button3=yes" in text        # subtitles: language menu
     # Switching audio tracks cannot work here (one track, languages are separate
     # encodes), so the track button is off and Lang does the job instead.
     assert "audio_tracks_button=no" in text
+    # ModernZ's own download button cannot work against these streams (no
+    # Referer/UA on the yt-dlp call, "master.mp4" for every file, killed when
+    # playback stops); it must stay disabled by default.
+    assert "download_button=no" in text
 
     conf.write_text("custom_button1=no\n", encoding="utf-8")
     monkeypatch.setattr(mpv_pack, "PACK_VERSION", "999")

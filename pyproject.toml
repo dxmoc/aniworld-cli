@@ -36,6 +36,6 @@ aniworld_cli = [
     "mpv/scripts/*.lua",
     "mpv/shaders/*.glsl",
     "mpv/fonts/*.ttf",
-    "mpv/script-opts/*.conf",
+    "mpv/script-opts/*",
     "mpv/*.md",
 ]
