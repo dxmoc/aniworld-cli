@@ -26,3 +26,8 @@ aniworld-cli = "aniworld_cli.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["aniworld_cli*"]
+
+# The Anime4K .glsl files are data, not code: a wheel only ships them with this
+# block. PyInstaller needs --collect-data on top of it (see release.yml).
+[tool.setuptools.package-data]
+"aniworld_cli.shaders" = ["*.glsl"]
