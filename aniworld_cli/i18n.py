@@ -75,6 +75,11 @@ STRINGS: dict[str, str] = {
     "no_query": "No search term given!",
     # Network / anti-bot
     "network_error": "Network error. Is the site reachable?",
+    "blocked": (
+        "The site did not return data (HTTP {}, {}). This is an IP block by its bot "
+        "protection, not a missing result: the address this connection exits from is "
+        "blocked. If you are on a VPN, reconnect to a different server and retry."
+    ),
     "cloudflare_block": (
         "The site is behind a Cloudflare challenge. "
         "An external 'flaresolverr' service can help (not included)."

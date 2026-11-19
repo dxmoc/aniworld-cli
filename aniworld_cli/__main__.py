@@ -115,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     import requests
 
     from . import cli
-    from .http import CloudflareChallenge
+    from .http import Blocked
 
     try:
         return cli.run(args)
@@ -123,8 +123,10 @@ def main(argv: list[str] | None = None) -> int:
         print()
         print(i18n.t("goodbye"))
         return 130
-    except CloudflareChallenge:
-        cli.error(i18n.t("cloudflare_block"))
+    except Blocked as blocked:
+        cli.error(i18n.t("blocked", blocked.status, blocked.protection))
+        if blocked.is_cloudflare:
+            cli.error(i18n.t("cloudflare_block"))
         return 1
     except requests.RequestException:
         if args.debug:
