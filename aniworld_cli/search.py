@@ -66,15 +66,18 @@ def search(query: str) -> list[Series]:
     query = (query or "").strip()
     if not query:
         return []
+    url = config.BASE_URL + SEARCH_PATH
     resp = http.post(
-        config.BASE_URL + SEARCH_PATH,
+        url,
         data={"keyword": query},
         headers={"X-Requested-With": "XMLHttpRequest"},
     )
     try:
         payload = resp.json()
     except ValueError:
-        return []
+        # Not JSON at all: a soft block or a maintenance page answered, so an
+        # empty result list would be a lie. Say what happened instead.
+        raise http.Blocked(url, resp.status_code, "an HTML page") from None
     if not isinstance(payload, list):
         return []
     return parse(payload, query)

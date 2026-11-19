@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from urllib.parse import urlparse
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -14,9 +15,37 @@ except ImportError:  # pragma: no cover
 
 from . import config
 
+# The site answers a blocked IP with an anti-bot page, not with content:
+# Cloudflare sends a JS challenge, DDoS-Guard a bare nginx 403. Both are 403 or
+# 503, and both carry the protection's name in a header or in the body.
+_BLOCK_STATUSES = (403, 503)
+_CLOUDFLARE_MARKERS = (
+    "just a moment",
+    "cf-chl",
+    "challenge-platform",
+    "cf-browser-verification",
+)
+_DDOS_GUARD_MARKERS = ("ddos-guard", "ddos guard")
 
-class CloudflareChallenge(Exception):
-    """Raised when a response looks like a Cloudflare anti-bot challenge."""
+
+class Blocked(Exception):
+    """The site answered with a bot-protection page instead of what was asked for.
+
+    An IP-level block parses exactly like an empty page, so ``search`` used to
+    convert it into an empty result list and the CLI printed "No results found
+    for 'frieren'!" -- a wrong diagnosis that sends people hunting for a typo
+    instead of switching the VPN exit. ``protection`` names what answered.
+    """
+
+    def __init__(self, url: str, status: int, protection: str) -> None:
+        self.url = url
+        self.status = status
+        self.protection = protection
+        super().__init__(f"{protection} blocked {url} (HTTP {status})")
+
+    @property
+    def is_cloudflare(self) -> bool:
+        return self.protection == "Cloudflare"
 
 
 _session: requests.Session | None = None
@@ -58,30 +87,48 @@ def _throttle() -> None:
     _last_request_at = time.monotonic()
 
 
-def _looks_like_cloudflare(resp: requests.Response) -> bool:
-    if resp.status_code not in (403, 503):
-        return False
+def blocked_by(resp: requests.Response) -> str | None:
+    """Name the bot protection behind ``resp``, or ``None`` when it is content."""
+    if resp.status_code not in _BLOCK_STATUSES:
+        return None
     server = resp.headers.get("Server", "").lower()
     body = resp.text[:4000].lower()
-    markers = ("just a moment", "cf-chl", "challenge-platform", "cf-browser-verification")
-    return "cloudflare" in server and any(m in body for m in markers)
+    if "cloudflare" in server and any(marker in body for marker in _CLOUDFLARE_MARKERS):
+        return "Cloudflare"
+    if "ddos-guard" in server or any(marker in body for marker in _DDOS_GUARD_MARKERS):
+        return "DDoS-Guard"
+    if resp.status_code == 403 and "html" in resp.headers.get("Content-Type", "").lower():
+        return server or "an unidentified filter"
+    return None
+
+
+def _check_block(resp: requests.Response, url: str) -> None:
+    """Raise :class:`Blocked` for the site's own pages.
+
+    Only the site is checked: hoster CDNs answer 403 to media on purpose (the
+    player probes a segment to test liveness and falls through to the next
+    hoster), so treating those as a block would break hoster fallback.
+    """
+    if urlparse(url).netloc != urlparse(config.BASE_URL).netloc:
+        return
+    protection = blocked_by(resp)
+    if protection is not None:
+        raise Blocked(url, resp.status_code, protection)
 
 
 def get(url: str, **kwargs: object) -> requests.Response:
-    """GET with throttle, shared session, and Cloudflare detection."""
+    """GET with throttle, shared session, and block detection."""
     _throttle()
     kwargs.setdefault("timeout", config.TIMEOUT)
     resp = get_session().get(url, **kwargs)  # type: ignore[arg-type]
-    if _looks_like_cloudflare(resp):
-        raise CloudflareChallenge(url)
+    _check_block(resp, url)
     return resp
 
 
 def post(url: str, **kwargs: object) -> requests.Response:
-    """POST with throttle, shared session, and Cloudflare detection."""
+    """POST with throttle, shared session, and block detection."""
     _throttle()
     kwargs.setdefault("timeout", config.TIMEOUT)
     resp = get_session().post(url, **kwargs)  # type: ignore[arg-type]
-    if _looks_like_cloudflare(resp):
-        raise CloudflareChallenge(url)
+    _check_block(resp, url)
     return resp
