@@ -452,7 +452,7 @@ def resolve_and_play(
         return 0, next_lang
 
     title = f"{series.title} – {episode.label}" if series else episode.label
-    return play_stream(stream, args.player, title), next_lang
+    return play_stream(stream, args.player, title, args), next_lang
 
 
 def post_playback_menu(
@@ -473,11 +473,17 @@ def post_playback_menu(
     return _select(i18n.t("what_next", _playing_label(episode), series.title), choices)  # type: ignore[return-value]
 
 
-def play_stream(stream: Stream, player_path: str | None, title: str | None = None) -> int:
+def play_stream(
+    stream: Stream,
+    player_path: str | None,
+    title: str | None = None,
+    args: argparse.Namespace | None = None,
+) -> int:
     """Launch mpv, surfacing an error if it cannot start."""
     info(i18n.t("starting_player"))
+    extra = player.split_args(getattr(args, "mpv_args", None))
     try:
-        rc = player.play(stream, player_path, title)
+        rc = player.play(stream, player_path, title, extra=extra)
     except player.PlayerNotFound as exc:
         error(i18n.t("mpv_missing"))
         error(str(exc))
