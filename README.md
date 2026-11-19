@@ -35,6 +35,10 @@
   mpv starts, so a hoster that hands out dead (403) segments is skipped instead
   of stalling the player.
 - **mpv only**: streaming, no downloads. mpv shows `Series – S01E03 – Episode title` as the title.
+- **Bundled mpv + Anime4K**: an isolated mpv config with upscaling shaders ships
+  inside the package, so a 720p stream looks sharp without touching your own
+  `~/.config/mpv`. Switch language, quality or shader *while watching*
+  (`Alt+s`, `Alt+u`, or the A4K button).
 - **Update hint**: once a day it checks GitHub for a newer release and prints
   the upgrade command (pipx or pip). Offline or rate-limited, it stays quiet.
 
@@ -148,11 +152,77 @@ Menus with a single entry, such as a series with one season, are skipped.
 | `--lang LIST` | language priority, e.g. `ger-dub,ger-sub,eng-sub` |
 | `--hoster LIST` | hoster priority, comma-separated, e.g. `Vidmoly,VOE` |
 | `--player PATH` | path to mpv (default: the bundled mpv on Windows, otherwise from `PATH`) |
+| `--mpv-config MODE` | `bundled` (default): shipped config + Anime4K; `user`: leave your own mpv config and shaders alone; or a directory to use instead |
+| `--anime4k PRESET` | `auto` (default, from the source height), `off`, `restore`, `gentle`, `a`, `fast`, `b`, `c` |
+| `--mpv-args ARGS` | extra mpv arguments, e.g. `--mpv-args "--geometry=1280x720 --mute=yes"` |
+| `--no-control` | do not attach to mpv: no in-player menus, no switching, no resume from the menu |
 | `--debug` | print the stream URL and headers instead of starting mpv; shows full tracebacks |
 | `--version` | print the version |
 
 Language tokens: `ger-dub` (German dub), `ger-sub` (German subtitles),
 `eng-sub` (English subtitles). Default order: `ger-dub,ger-sub,eng-sub`.
+
+### Anime4K and the bundled mpv config
+
+By default aniworld-cli starts mpv with `--config-dir` pointing at its **own**
+config, so your `~/.config/mpv` is never read or modified. Nothing has to be
+installed: mpv loads the shipped `mpv.conf`, the control script and the
+Anime4K shaders from a private directory.
+
+The streams are ~720p at ~1.2 Mbit/s, which looks blocky on a large display, so
+an upscaling preset is chosen automatically: `a` (Mode A, ~16 % of an RTX 2080
+at 24 fps) below 1080p, `restore` at 1080p and above. Pick another one with
+`--anime4k`.
+
+On first run the pack is copied out of the package into your data directory,
+because a wheel, a Nix store path or a PyInstaller bundle can be read-only:
+
+| OS | Location |
+|---|---|
+| Linux / BSD | `$XDG_DATA_HOME/aniworld-cli/mpv` (default `~/.local/share/aniworld-cli/mpv`) |
+| macOS | `~/Library/Application Support/aniworld-cli/mpv` |
+| Windows | `%LOCALAPPDATA%\aniworld-cli\mpv` |
+
+Two files there are yours: `user-overlay.conf` is included from `mpv.conf` and
+`script-opts/modernz.conf` configures the on-screen controls. Both are written
+once and never overwritten by an update — delete one to get the defaults back.
+Updates replace everything else, and the copy is refreshed automatically when
+the shipped pack changes.
+
+`--mpv-config user` skips all of this: mpv then uses your own configuration and
+Anime4K is disabled, because replacing your shader chain would be rude.
+`--mpv-config /some/dir` uses that directory instead. The directory has to
+exist — a typo is rejected instead of starting mpv with an empty config dir that
+has no on-screen controls — and if it has no `shaders/` of its own the presets
+keep working from the bundled chain, which is said once on stderr.
+
+The on-screen controls are Lua plus `script-opts`, with no per-platform code,
+but they have only been driven by hand on Linux: CI's Windows run plays five
+seconds headless, which exercises the pack and the IPC socket but draws nothing.
+
+### Keys inside the player
+
+| Key | Action |
+|---|---|
+| `Alt+s` | menu with language and quality (then `1`–`6`) |
+| `Alt+l` | language only |
+| `Alt+q` | quality only |
+| `Alt+u` | Anime4K preset only (`1`–`7`, `Esc` closes) |
+| `Esc` | close the menu |
+
+The shader menu explains what each preset does and marks the one that suits
+your stream's resolution. The same menu is on the **A4K** button in the
+on-screen controls, next to the audio-track button. Switching a shader applies instantly; switching
+language or quality reloads the stream — the three languages are separate
+encodes with burned-in subtitles, so there is no audio track to switch to. The
+new stream resumes at the position you were at. A quality you picked yourself is
+kept across a language switch; if that encode has no such height (1080p exists
+only on some English encodes) the switch uses Auto instead and says so in the
+player.
+
+Adding `--no-control` starts mpv on its own, without the IPC socket, the menus
+or the shader switching (useful with `--mpv-config user`).
+
 
 ### Environment variables
 
@@ -209,8 +279,11 @@ without starting mpv: `aniworld-cli "naruto" --no-menu --episode 1-1 --debug`
 should print a `master.m3u8` URL.
 
 Code path: `search.py` -> `series.py` / `episode.py` -> `resolve.py` ->
-`extractors/<hoster>.py` -> `player.py`. Menus live in `cli.py`, all on-screen
-text in `i18n.py`.
+`extractors/<hoster>.py` -> `playback.py` -> `player.py`. The bundled player
+environment is materialised by `mpv_pack.py`, driven over mpv's IPC socket by
+`mpvctl.py`, and the shader chains are in `shaders.py`; what the controls draw
+is `mpv/scripts/aniworld.lua`. Menus live in `cli.py`, all on-screen text in
+`i18n.py`.
 
 ## Credits and license
 
