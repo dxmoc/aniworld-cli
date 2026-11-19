@@ -46,6 +46,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--player", help="path to mpv (default: from PATH)")
     p.add_argument(
+        "--mpv-args",
+        metavar="ARGS",
+        help="extra mpv arguments, e.g. --mpv-args \"--geometry=1280x720 --mute=yes\"",
+    )
+    p.add_argument(
         "--debug",
         action="store_true",
         help="resolve and print the stream URL and headers, do not start mpv",
@@ -79,9 +84,31 @@ def _force_utf8_stdio() -> None:
                 pass
 
 
+def _join_mpv_args(argv: list[str]) -> list[str]:
+    """Turn ``--mpv-args --geometry=…`` into ``--mpv-args=--geometry=…``.
+
+    mpv arguments almost always start with a dash, and argparse reads a value
+    that begins with one as the *next option*, so the documented
+    ``--mpv-args "--mute=yes"`` form would fail with "expected one argument".
+    Both spellings work through this rewrite.
+    """
+    out: list[str] = []
+    index = 0
+    while index < len(argv):
+        token = argv[index]
+        if token == "--mpv-args" and index + 1 < len(argv):
+            out.append("--mpv-args=" + argv[index + 1])
+            index += 2
+            continue
+        out.append(token)
+        index += 1
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     _force_utf8_stdio()
-    args = build_parser().parse_args(argv)
+    raw = list(sys.argv[1:] if argv is None else argv)
+    args = build_parser().parse_args(_join_mpv_args(raw))
     _apply_env_overrides(args)
 
     # Import after env overrides so config picks them up.

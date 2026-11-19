@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import shlex
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Sequence
 
 from . import i18n
 from .models import Stream
@@ -44,7 +46,46 @@ def install_hint() -> str:
     return i18n.t("mpv_hint_linux")
 
 
-def build_command(mpv_path: str, stream: Stream, title: str | None = None) -> list[str]:
+#: ``shlex`` in POSIX mode would eat the backslashes of a Windows path, so the
+#: splitter differs per platform. Kept as a constant rather than read inline so a
+#: test can exercise both branches on any OS.
+_POSIX = not sys.platform.startswith("win")
+
+
+def _unquote(token: str) -> str:
+    """Strip one layer of quotes from one token.
+
+    ``posix=False`` keeps the quotes, and not only around whole tokens: for
+    ``--script-opts="a=b,c=d"`` the quote is *inside* the token, so checking the
+    first and last character alone misses it and mpv receives ``"a`` as the
+    option value.
+    """
+    if len(token) >= 2 and token[0] == token[-1] and token[0] in "\"'":
+        return token[1:-1]
+    name, sep, value = token.partition("=")
+    if sep and len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        return f"{name}={value[1:-1]}"
+    return token
+
+
+def split_args(value: str | None) -> list[str]:
+    """Split ``--mpv-args`` into argv tokens, on every OS.
+
+    ``posix=True`` would eat backslashes in Windows paths, ``posix=False`` keeps
+    the quotes around quoted tokens; so: split per platform, then unquote --
+    including the ``name="value"`` form, where the quotes do not start the token.
+    """
+    if not value:
+        return []
+    return [_unquote(token) for token in shlex.split(value, posix=_POSIX)]
+
+
+def build_command(
+    mpv_path: str,
+    stream: Stream,
+    title: str | None = None,
+    extra: Sequence[str] | None = None,
+) -> list[str]:
     """Build the mpv argv from the resolved stream and its required headers.
 
     User-Agent is passed via mpv's dedicated ``--user-agent`` flag rather than
@@ -58,6 +99,9 @@ def build_command(mpv_path: str, stream: Stream, title: str | None = None) -> li
 
     ``--no-terminal`` keeps mpv's log (track list, harmless ffmpeg TLS noise on
     quit) out of the terminal, as with ani-cli; mpv is controlled in its window.
+
+    Everything below ``--no-terminal`` is optional and additive: with no extra
+    arguments the command is byte-for-byte what it always was.
     """
     cmd = [mpv_path, "--no-terminal"]
     headers = dict(stream.headers)
@@ -71,18 +115,24 @@ def build_command(mpv_path: str, stream: Stream, title: str | None = None) -> li
         cmd.append(f"--http-header-fields={fields}")
     if title:
         cmd.append(f"--force-media-title={title}")
+    cmd.extend(extra or ())
     cmd.append(stream.url)
     return cmd
 
 
-def play(stream: Stream, mpv_path: str | None = None, title: str | None = None) -> int:
-    """Launch mpv for ``stream``. Returns mpv's exit code.
+def play(
+    stream: Stream,
+    mpv_path: str | None = None,
+    title: str | None = None,
+    extra: Sequence[str] | None = None,
+) -> int:
+    """Launch mpv for ``stream`` and wait. Returns mpv's exit code.
 
     Raises PlayerNotFound if mpv is unavailable.
     """
     resolved = find_mpv(mpv_path)
     if not resolved:
         raise PlayerNotFound(install_hint())
-    cmd = build_command(resolved, stream, title)
+    cmd = build_command(resolved, stream, title, extra=extra)
     proc = subprocess.run(cmd)  # noqa: S603 - argv list, no shell
     return proc.returncode
