@@ -77,6 +77,9 @@ class Session:
     def _initial_preset(self) -> str:
         if not self.shader_dir:
             return "off"
+        wanted = getattr(self.args, "anime4k", None) or "auto"
+        if wanted != "auto":
+            return wanted if wanted in shaders.PRESETS else shaders.DEFAULT
         return shaders.auto_preset(self._source_height())
 
     def _source_height(self) -> int | None:

@@ -399,3 +399,15 @@ def test_quality_auto_goes_back_to_the_master_playlist(tmp_path: Path, monkeypat
 
     assert ("loadfile", "https://cdn/a-new.m3u8", 420.0) in session.mpv.calls
     assert session.quality == "auto"
+def test_explicit_preset_overrides_the_source(tmp_path: Path):
+    """--anime4k fast must win over the height-based choice; junk falls back."""
+    session = _session(tmp_path)
+    session.shader_dir = tmp_path
+    session.args.anime4k = "fast"
+    assert session._initial_preset() == "fast"
+
+    session.args.anime4k = "no-such-preset"
+    assert session._initial_preset() == shaders.DEFAULT
+
+    session.args.anime4k = "auto"
+    assert session._initial_preset() == shaders.auto_preset(None)

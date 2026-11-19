@@ -56,6 +56,15 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     p.add_argument(
+        "--anime4k",
+        default="auto",
+        metavar="PRESET",
+        help=(
+            "Anime4K preset: auto (from the source resolution), off, restore, gentle, "
+            "a, fast, b, c"
+        ),
+    )
+    p.add_argument(
         "--mpv-args",
         metavar="ARGS",
         help="extra mpv arguments, e.g. --mpv-args \"--geometry=1280x720 --mute=yes\"",
