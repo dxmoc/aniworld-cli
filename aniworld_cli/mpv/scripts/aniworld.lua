@@ -66,6 +66,25 @@ end
 -- four entries would be unreachable.
 local KEYS = 9
 
+-- Panel layout. A hint line is smaller than a label line, and the box is sized
+-- from these numbers, so they have to match what is drawn.
+local LINE = 31
+local HINT_LINE = 26
+
+-- Rows may carry a one-line explanation (the shader presets do). It is drawn
+-- dimmed underneath the label: a bare "Mode B" says nothing about what a mode
+-- costs or when it is the right pick.
+local function hint_of(row)
+    return row.hint or ""
+end
+
+-- Pixel height of one row, so the panel box ends just below the last line.
+local function row_height(row)
+    local height = LINE
+    if hint_of(row) ~= "" or row.recommended then height = height + HINT_LINE end
+    return height
+end
+
 local function group(title, rows, mark, offset)
     offset = offset or 0
     local out = { "{\\fs26\\b1\\c" .. C_TITLE .. "}" .. esc(title) .. "{\\b0}\\N" }
@@ -80,6 +99,13 @@ local function group(title, rows, mark, offset)
             key <= KEYS and tostring(key) or "-",
             esc(row.label)
         )
+        local hint = hint_of(row)
+        if hint ~= "" or row.recommended then
+            out[#out + 1] = "{\\fs19\\c" .. C_DIM .. "}      " .. esc(hint)
+                .. (row.recommended
+                    and "{\\c" .. C_SEL .. "}   recommended for this stream" or "")
+                .. "{\\c}\\N"
+        end
     end
     return table.concat(out)
 end
@@ -111,12 +137,15 @@ local function render()
     local groups = groups_for(menu.kind)
     local total = #rows_of(menu.kind)
 
-    local parts, lines = {}, 0
+    local parts, height = {}, 0
     local offset = 0
     for _, g in ipairs(groups) do
         parts[#parts + 1] = group(g[1], g[2], g[3], offset)
         offset = offset + #g[2]
-        lines = lines + 1 + #g[2]          -- group title + its rows
+        height = height + LINE             -- group title
+        for _, row in ipairs(g[2]) do
+            height = height + row_height(row)
+        end
     end
     local body = table.concat(parts, "\\N")
 
@@ -126,9 +155,15 @@ local function render()
         .. "   Esc close"
         .. (STATE.busy and "   resolving..." or "") .. "{\\c}"
 
-    local W = 620
-    local LINE = 31
-    local H = 16 + 28 + lines * LINE + 30
+    -- Hinted menus need room for the explanation and the recommendation note.
+    local wide = false
+    for _, g in ipairs(groups) do
+        for _, row in ipairs(g[2]) do
+            if hint_of(row) ~= "" then wide = true end
+        end
+    end
+    local W = wide and 860 or 620
+    local H = 16 + 28 + height + 30
 
     panel.data = string.format(
         "{\\an7\\pos(40,40)\\p1\\bord0\\shad0\\1c&H101010&\\1a&H40&}"

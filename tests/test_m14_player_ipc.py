@@ -410,4 +410,19 @@ def test_explicit_preset_overrides_the_source(tmp_path: Path):
     assert session._initial_preset() == shaders.DEFAULT
 
     session.args.anime4k = "auto"
+    session.recommended = shaders.auto_preset(None)  # what init would have set
     assert session._initial_preset() == shaders.auto_preset(None)
+
+
+def test_recommended_row_is_the_automatic_choice_not_the_manual_one(tmp_path: Path):
+    """The menu marks what auto would pick, even after a manual --anime4k pick."""
+    session = _session(tmp_path)
+    session.shader_dir = tmp_path
+    session.recommended = "a"
+    session.args.anime4k = "fast"
+    session.preset = "fast"
+
+    rows = session._state()["shaders"]
+    recommended = [r["token"] for r in rows if r["recommended"]]
+    assert recommended == ["a"]
+    assert all(r["hint"] for r in rows), "every row needs an explanation"

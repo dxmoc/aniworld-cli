@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from aniworld_cli import mpv_pack
+from aniworld_cli import mpv_pack, shaders
 
 
 def test_materialize_copies_the_pack_and_creates_the_overlay(tmp_path: Path):
@@ -212,3 +212,12 @@ def test_cli_refuses_to_start_mpv_with_a_bogus_config_dir(
     assert rc == 2
     assert "no such directory" in capsys.readouterr().err
 
+
+def test_every_preset_has_a_menu_hint():
+    """The shader menu explains each mode; a missing hint is a silent gap."""
+    assert set(shaders.HINTS) == set(shaders.PRESETS)
+    for token, label in shaders.LABELS:
+        hint = shaders.HINTS[token]
+        assert hint, token
+        # Drawn at fs19 inside an 860 px panel: keep it on one line.
+        assert len(hint) <= 56, (token, len(hint))

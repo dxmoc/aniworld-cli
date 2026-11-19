@@ -64,6 +64,18 @@ LABELS: list[tuple[str, str]] = [
     ("c", "Mode C - denoise + deblur"),
 ]
 
+#: What each preset actually does, for the in-player menu. Short on purpose:
+#: they are drawn under the label and must fit the panel without wrapping.
+HINTS: dict[str, str] = {
+    "off": "no shaders at all: softest, cheapest",
+    "restore": "fixes blocky lines, made for 1080p sources",
+    "gentle": "softer restore for very blocky sources",
+    "a": "restore + 2x upscale: best all-round for 720p",
+    "fast": "Mode A on smaller CNNs, about a third of the GPU cost",
+    "b": "upscale only, cheapest way to sharpen 720p",
+    "c": "denoise + deblur for noisy or old encodes",
+}
+
 DEFAULT = "restore"
 
 

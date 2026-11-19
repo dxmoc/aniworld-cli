@@ -65,6 +65,9 @@ class Session:
         # not go back to "auto".
         self.master: Stream | None = stream
         self.variants: list[tuple[int, str]] = []
+        # What "auto" would pick for this source. Independent of --anime4k, so
+        # the menu can say "this one suits your stream" even after a manual pick.
+        self.recommended = self._recommended_preset()
         self.preset = self._initial_preset()
         # A height token ("720") or "auto". Kept across a language switch: the
         # same height is re-applied when the new encode lists it.
@@ -74,13 +77,19 @@ class Session:
         self._queue: Queue[list[str]] = Queue()
 
     # -- setup ----------------------------------------------------------
+    def _recommended_preset(self) -> str:
+        """The preset "auto" would choose for this source."""
+        if not self.shader_dir:
+            return "off"
+        return shaders.auto_preset(self._source_height())
+
     def _initial_preset(self) -> str:
         if not self.shader_dir:
             return "off"
         wanted = getattr(self.args, "anime4k", None) or "auto"
         if wanted != "auto":
             return wanted if wanted in shaders.PRESETS else shaders.DEFAULT
-        return shaders.auto_preset(self._source_height())
+        return self.recommended
 
     def _source_height(self) -> int | None:
         """Highest variant of the resolved stream, if the playlist lists any."""
@@ -120,7 +129,13 @@ class Session:
             # No preset can apply without a shader directory (``--mpv-config
             # user``), so do not offer a menu that would silently do nothing.
             "shaders": [
-                {"token": token, "label": label, "action": "shader"}
+                {
+                    "token": token,
+                    "label": label,
+                    "hint": shaders.HINTS.get(token, ""),
+                    "recommended": token == self.recommended,
+                    "action": "shader",
+                }
                 for token, label in (shaders.LABELS if self.shader_dir else ())
             ],
         }
