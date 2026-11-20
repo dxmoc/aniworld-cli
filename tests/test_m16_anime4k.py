@@ -48,6 +48,13 @@ def test_presets_only_name_glsl_files_that_exist():
         # so only the presence is asserted, never uniqueness.
 
 
+def test_every_shipped_shader_is_used_by_a_preset():
+    """An unused .glsl is dead weight in every wheel and bundle."""
+    shipped = {path.name for path in shaders.shader_dir().glob("*.glsl")}
+    used = {name for names in shaders.PRESETS.values() for name in names}
+    assert shipped - used == set()
+
+
 def test_off_is_the_empty_chain():
     assert shaders.files("off") == []
     assert shaders.glsl_value("off") == ""

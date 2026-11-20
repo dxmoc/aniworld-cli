@@ -170,8 +170,12 @@ scripts, your own `~/.config/mpv` keeps working as before.
 | `gentle` | softer repair for very blocky sources |
 | `fast` | Mode A on the small CNNs — about a third of the GPU cost of `a` |
 | `a` | Mode A — repair + 2x upscale, heaviest; drops frames on an iGPU |
-| `b` | Mode B — upscale only, no repair |
-| `c` | Mode C — denoise + deblur, no upscale |
+| `upscale` | upscale only, no repair — cheapest way to sharpen a soft source |
+| `denoise` | denoise + deblur, no upscale |
+
+`upscale` and `denoise` are named after what they do instead of borrowing a
+mode letter: upstream Mode B is `Restore_CNN_Soft` + upscale and Mode C is
+`Upscale_Denoise_CNN_x2` + upscale, and neither chain is shipped here.
 
 ```bash
 aniworld-cli "frieren" --anime4k fast

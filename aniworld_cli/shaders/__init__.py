@@ -39,16 +39,19 @@ PRESETS: dict[str, list[str]] = {
         "Anime4K_AutoDownscalePre_x4.glsl",
         "Anime4K_Upscale_CNN_x2_S.glsl",
     ],
-    # Mode B: upscale only, no restoration.
-    "b": [
+    # Upscale only: no restoration. Named by what it does, because it is not
+    # bloc97's Mode B (that one is Restore_CNN_Soft + upscale).
+    "upscale": [
         "Anime4K_Clamp_Highlights.glsl",
         "Anime4K_Upscale_CNN_x2_M.glsl",
         "Anime4K_AutoDownscalePre_x2.glsl",
         "Anime4K_AutoDownscalePre_x4.glsl",
         "Anime4K_Upscale_CNN_x2_S.glsl",
     ],
-    # Mode C: denoise + deblur, no CNN upscale.
-    "c": [
+    # Denoise + deblur, no upscale at all: also not bloc97's Mode C
+    # (Upscale_Denoise + upscale), so it is named by its effect instead of a
+    # mode letter.
+    "denoise": [
         "Anime4K_Clamp_Highlights.glsl",
         "Anime4K_Denoise_Bilateral_Mean.glsl",
         "Anime4K_Deblur_DoG.glsl",
@@ -63,8 +66,8 @@ HINTS: dict[str, str] = {
     "gentle": "softer repair for very blocky sources",
     "fast": "Mode A on the small CNNs - about a third of the GPU cost of 'a'",
     "a": "Mode A - restore + 2x upscale, heaviest; drops frames on an iGPU",
-    "b": "Mode B - upscale only, no repair",
-    "c": "Mode C - denoise + deblur, no upscale",
+    "upscale": "upscale only, no repair - cheapest way to sharpen",
+    "denoise": "denoise + deblur, no upscale",
 }
 
 
