@@ -46,6 +46,11 @@ STRINGS: dict[str, str] = {
     ),
     "starting_player": "Starting mpv...",
     "player_failed": "mpv stopped with an error (exit code {}). Try another hoster with --hoster.",
+    "shaders_missing": (
+        "Anime4K shader files are missing from this install ({}), playing without "
+        "them. Reinstall from the wheel, or load shaders yourself with "
+        '--mpv-args "--glsl-shaders=..."'
+    ),
     "fzf_missing": (
         "fzf not found! Install it ('sudo apt install fzf', 'scoop install fzf') "
         "or install aniworld-cli from the wheel, which ships fzf."

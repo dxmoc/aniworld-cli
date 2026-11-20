@@ -16,7 +16,7 @@ from typing import cast
 
 from iterfzf import BUNDLED_EXECUTABLE, iterfzf
 
-from . import i18n, player
+from . import i18n, player, shaders
 from .models import Episode, Series, Stream
 
 # Wheels ship fzf inside iterfzf; source builds (e.g. Nix) rely on fzf from PATH.
@@ -481,7 +481,18 @@ def play_stream(
 ) -> int:
     """Launch mpv, surfacing an error if it cannot start."""
     info(i18n.t("starting_player"))
-    extra = player.split_args(getattr(args, "mpv_args", None))
+    extra: list[str] = []
+    preset = getattr(args, "anime4k", None)
+    if preset and preset != "off":
+        missing = shaders.missing_files(preset)
+        if missing:
+            # A frozen build without the package data, or a source install that
+            # did not ship it. Play anyway, but say the shaders are not active.
+            warn(i18n.t("shaders_missing", ", ".join(missing)))
+        else:
+            extra.append(f"--glsl-shaders={shaders.glsl_value(preset)}")
+    # After the shaders, so mpv's last-wins rule leaves the final say here.
+    extra.extend(player.split_args(getattr(args, "mpv_args", None)))
     try:
         rc = player.play(stream, player_path, title, extra=extra)
     except player.PlayerNotFound as exc:

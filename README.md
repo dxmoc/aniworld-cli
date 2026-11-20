@@ -148,11 +148,43 @@ Menus with a single entry, such as a series with one season, are skipped.
 | `--lang LIST` | language priority, e.g. `ger-dub,ger-sub,eng-sub` |
 | `--hoster LIST` | hoster priority, comma-separated, e.g. `Vidmoly,VOE` |
 | `--player PATH` | path to mpv (default: the bundled mpv on Windows, otherwise from `PATH`) |
+| `--mpv-args ARGS` | extra mpv arguments, e.g. `--mpv-args "--mute=yes"` |
+| `--anime4k PRESET` | opt-in Anime4K shaders for mpv, off by default (see below) |
 | `--debug` | print the stream URL and headers instead of starting mpv; shows full tracebacks |
 | `--version` | print the version |
 
 Language tokens: `ger-dub` (German dub), `ger-sub` (German subtitles),
 `eng-sub` (English subtitles). Default order: `ger-dub,ger-sub,eng-sub`.
+
+### Anime4K shaders (opt-in)
+
+`--anime4k PRESET` hands a bundled [Anime4K](https://github.com/bloc97/Anime4K)
+shader chain to mpv as `--glsl-shaders`. It is off unless you ask for it, and it
+does not change your mpv setup: no `--config-dir`, no bundled `mpv.conf`, no
+scripts, your own `~/.config/mpv` keeps working as before.
+
+| Preset | What it does |
+|---|---|
+| `off` | nothing (the default) |
+| `restore` | repair blocky lines only — cheapest, made for 720p sources |
+| `gentle` | softer repair for very blocky sources |
+| `fast` | Mode A on the small CNNs — about a third of the GPU cost of `a` |
+| `a` | Mode A — repair + 2x upscale, heaviest; drops frames on an iGPU |
+| `upscale` | upscale only, no repair — cheapest way to sharpen a soft source |
+| `denoise` | denoise + deblur, no upscale |
+
+`upscale` and `denoise` are named after what they do instead of borrowing a
+mode letter: upstream Mode B is `Restore_CNN_Soft` + upscale and Mode C is
+`Upscale_Denoise_CNN_x2` + upscale, and neither chain is shipped here.
+
+```bash
+aniworld-cli "frieren" --anime4k fast
+```
+
+Nothing is chosen automatically: a 1080p source gains little from a 2x chain, and
+a laptop iGPU will drop frames on `a`. Combine with `--mpv-args` freely; the
+shaders come first, your arguments after, so mpv's last-wins rule gives you the
+final say.
 
 ### Environment variables
 
@@ -221,6 +253,10 @@ watchlist, binge mode, liveness-checked hoster fallback.
 
 Licensed under the **GNU GPL v3.0 or later**, see [LICENSE](LICENSE).
 Copyright © 2026 dxmoc.
+
+The bundled `.glsl` files in `aniworld_cli/shaders/` are unmodified
+[bloc97/Anime4K](https://github.com/bloc97/Anime4K), MIT licensed (see
+`THIRD-PARTY.md` in that directory).
 
 This is a client-side access tool and hosts no content. You are responsible for
 using it lawfully.

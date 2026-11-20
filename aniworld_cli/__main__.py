@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import __version__, i18n
+from . import __version__, i18n, shaders
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -49,6 +49,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--mpv-args",
         metavar="ARGS",
         help="extra mpv arguments, e.g. --mpv-args \"--geometry=1280x720 --mute=yes\"",
+    )
+    p.add_argument(
+        "--anime4k",
+        metavar="PRESET",
+        choices=list(shaders.PRESETS),
+        help="opt-in Anime4K shaders, passed to mpv as --glsl-shaders. "
+        "Your own mpv config is not touched, nothing is enabled by default: "
+        + "; ".join(f"{name} = {hint}" for name, hint in shaders.HINTS.items()),
     )
     p.add_argument(
         "--debug",
